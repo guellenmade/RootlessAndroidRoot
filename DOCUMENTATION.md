@@ -237,26 +237,91 @@ See AGENT.md §8 — kept in one place so agents and humans never diverge.
 Summary: proot/llvmpipe performance, deny-all firewall v1, polling-based
 display, Vector artifacts tied to rootfs Android version, AVF path roadmap.
 
+## 11a. Deep dive: the shortcut mechanism
+
+The full pipeline, step by step:
+
+1. **Install:** an APK is installed into the container (`ContainerSession.installApk`).
+2. **Scan:** the host asks the container's PackageManager for third-party
+   packages and per-package info (`pm list packages -3`, `dumpsys package`).
+3. **Store:** label, version, and icon land in the JSON `ContainerAppStore`
+   (ADR-003) under app-private storage.
+4. **Icon conversion:** `AdaptiveIconFactory` renders the icon into a
+   432×432 adaptive-icon safe zone (foreground layer), and `ShortcutSync`
+   pins it via `ShortcutManager` with `Icon.createWithAdaptiveBitmap` — so
+   launchers mask it correctly (circle/squircle/etc.).
+5. **Pinning:** `requestPinShortcut` asks the launcher to add the shortcut;
+   launchers that refuse pinning are handled gracefully (the in-app grid
+   still works).
+6. **Launch:** the shortcut's intent targets `ShortcutLaunchActivity`, which
+   (a) starts the VM if it is not running (waiting up to 30 s for the Running
+   state), (b) launches the target package inside the container, and (c)
+   forwards the user to the main UI with the live container display.
+
+Everything runs under our app UID: no host permissions beyond the
+shortcut + VPN + service set declared in the manifest.
+
+## 11b. Deep dive: Xposed without Magisk — exact chain
+
+```
+[rootfs deploy time — once]
+  vector/build_vector.sh         # clone Vector @ ddeed8c, build injector + dex + manager
+  vector/deploy_into_rootfs.sh   # install into rootfs:
+     /system/lib64/libvector_inject.so   (LSPlant + Dobby + lspd native)
+     /system/framework/vector-xposed.jar (XposedBridge classpath)
+     /system/bin/app_process64 -> wrapper; original kept as app_process64.real
+     /data/adb/vector/                    (module config home)
+
+[VM boot — every start]
+  proot -0 ...  -> container Android userspace boots
+  zygote: /system/bin/app_process64 (our wrapper)
+     sets LD_PRELOAD=/system/lib64/libvector_inject.so
+     execs app_process64.real --zygote --start-system-server
+  injector initializes inside zygote:
+     loads vector-xposed.jar into the zygote classpath
+     LSPlant/ART hooking engine armed (Dobby for inline hooks)
+     module config read from /data/adb/vector (inside the rootfs)
+  app forked from zygote -> hooks inherited
+     legacy-API modules: IXposedHookLoadPackage et al.
+     libxposed-API modules: modern API surface
+     scope rules: only hooked if the module's scope includes the package
+```
+
+Key honesty points:
+
+- There is **no Zygisk** and **no Magisk/KernelSU** in the container; the
+  injection is a Riru-era-style direct load, possible only because we own
+  the rootfs image (ADR-005).
+- **Vector's manager UI runs inside the container** as a normal app:
+  module list, per-app scope, enable/disable, logs. WebUI is not available
+  (Vector 2.0 removed it).
+- **Version lock:** the injector is built against the rootfs's ART. The rootfs
+  carries `vector-manifest.json`; `VmController.checkCompatibility()` refuses
+  to boot on mismatch (clean abort).
+- **Host safety:** everything above happens inside the proot namespace over
+  app-private storage. No host process is hooked, ever.
+
 ## 12. Local testing setup (Phase 6 runbook)
 
-Runbook for a local test device (arm64, Android 13+ host recommended):
+Full runbook: [docs/local-testing/phase6_runbook.md](docs/local-testing/phase6_runbook.md),
+sample module notes: [docs/local-testing/pinned_sample_module.md](docs/local-testing/pinned_sample_module.md).
 
-1. Build + install the debug app; launch; let the rootfs download and unpack.
-2. Install **two container apps**: e.g. `F-Droid.apk` and the
-   `API Demos` (or any two small FOSS APKs) via the in-app APK file picker.
+Short version (arm64, Android 13+ host recommended):
+
+1. Build + install the debug app; launch; let the rootfs download and unpack
+   (checksum-verified).
+2. Install **two container apps** (e.g. the F-Droid client + one more small
+   FOSS APK) via the in-app APK file picker.
 3. Verify both apps appear in the in-app grid; pin their shortcuts to the
-   launcher (host) and confirm icons are adaptive and launch into the VM.
-4. Install one real Xposed module inside the container (e.g. a module that
-   hooks an obvious string/method of one of the two apps, built for the
-   container's Android version), enable it with scope = the target app in the
-   Vector manager UI, force-stop/restart the target app inside the container,
-   and verify the hook is active (module's observable effect + Vector logs).
-5. Accept the su prompt for one app and deny it for another; check the
-   superuser list and logs.
+   host launcher; confirm icons are adaptive and launch into the VM.
+4. Install one real Xposed module inside the container, enable it with
+   scope = the target app in the Vector manager UI, restart the target app,
+   and verify the hook (visible effect + Vector logs).
+5. Accept `su` for one app, deny for another; check the superuser list and
+   logs; confirm the host remains unrooted.
 
-Expected evidence of success: shortcuts launch VM + app; module hook visibly
-changes target app behavior; Vector log shows module load; su log shows both
-decisions.
+Pass criteria and negative tests (checksum mismatch, artifact version
+mismatch, firewall refusal) are listed in the runbook.
 
 ## 13. Changelog
 
@@ -266,3 +331,9 @@ decisions.
 - **Phase 2:** Repo layout: Gradle skeleton, manifest, launcher resources, container runtime scripts, su wrapper, proot/Vector build scripts, README; F-Droid metadata and CI follow in Phase 4.
 - **Phase 3:** Complete app source (MVVM + Compose): VM service, proot runtime, rootfs installer with checksum verification, su policy manager, Xposed module manager, firewall VPN, shortcuts with adaptive icons, in-app app grid; unit tests for fail states and version cross-check.
 - **Phase 4:** CI pipeline (app build/test, Vector + proot artifact builds, tag-driven releases) and F-Droid metadata.
+- **Phase 5:** DOCUMENTATION.md finalized: deep-dive sections for the
+  shortcut mechanism (11a) and the exact Xposed-without-Magisk chain (11b),
+  local-testing bundle under docs/local-testing/ (Phase 6 runbook + pinned
+  sample module notes), expanded device matrix pointers.
+- **Phase 6:** Local test setup documented (runbook + sample module pin);
+  on-device execution remains device-dependent and is tracked in AGENT.md §9.
