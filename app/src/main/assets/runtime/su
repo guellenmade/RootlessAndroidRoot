@@ -1,0 +1,35 @@
+#!/system/bin/sh
+# su wrapper, installed as /system/bin/su (or /system/xbin/su) inside the
+# rootfs. Policy is read from the JSON file the host manager UI writes into
+# the container-shared directory (/data/rootless/su/policy.json).
+set -eu
+
+POLICY="/data/rootless/su/policy.json"
+LOG="/data/rootless/su/log.txt"
+CALLER="$(id -un 2>/dev/null || echo unknown)"
+CALLER_UID="$(id -u 2>/dev/null || echo -1)"
+
+if [ ! -f "${POLICY}" ]; then
+    echo "su: policy store missing (host manager not initialized)" >&2
+    exit 1
+fi
+
+# Decision: granted / denied / prompt. 'prompt' blocks until the host UI
+# answers via the request file protocol (host watches the requests dir).
+DECISION="$(
+    /system/bin/sh /data/rootless/su/policy_check.sh "${CALLER_UID}" "${CALLER}" "${POLICY}"
+)"
+
+{
+    echo "$(date) uid=${CALLER_UID} caller=${CALLER} cmd=$* -> ${DECISION}"
+} >>"${LOG}" 2>/dev/null || true
+
+case "${DECISION}" in
+granted)
+    exec "${0%.real}-exec-real" "$@"
+    ;;
+*)
+    echo "su: request denied for uid ${CALLER_UID} (${CALLER})" >&2
+    exit 1
+    ;;
+esac

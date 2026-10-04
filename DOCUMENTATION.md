@@ -263,3 +263,4 @@ decisions.
 - **Phase 1:** Architecture decision (ADR-002: proot baseline, AVF optional),
   compatibility matrix, limitations; initial AGENT.md and DOCUMENTATION.md;
   GPL-3.0 LICENSE; NOTICE.
+- **Phase 2:** Repo layout: Gradle skeleton, manifest, launcher resources, container runtime scripts, su wrapper, proot/Vector build scripts, README; F-Droid metadata and CI follow in Phase 4.

@@ -259,3 +259,5 @@ Fail states (clean abort + dialog, never half-working):
 - **Phase 1 (this commit):** Architecture decision ADR-002, compatibility
   matrix, limitations; initial AGENT.md + DOCUMENTATION.md; LICENSE.
 - (later phases appended below)
+
+- **Phase 2 (this commit):** Repo layout created: Gradle skeleton (AGP 9, Kotlin 2.2, minSdk 28/target 36), manifest + services, launcher resources, runtime scripts (proot entry, entry.sh, zygote app_process wrapper, su + policy check, APK install, package list), proot + Vector build/deploy scripts, README. AGENT.md extended with layout details; entry.sh and policy_check.sh added to module map.
