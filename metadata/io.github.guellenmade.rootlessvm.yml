@@ -1,0 +1,40 @@
+Categories:
+  - System
+License: GPL-3.0-or-later
+AuthorName: guellenmade
+SourceCode: https://github.com/guellenmade/RootlessAndroidRoot
+WebSite: https://github.com/guellenmade/RootlessAndroidRoot
+IssueTracker: https://github.com/guellenmade/RootlessAndroidRoot/issues
+Changelog: https://github.com/guellenmade/RootlessAndroidRoot/blob/main/DOCUMENTATION.md
+
+Name: RootlessVM
+Summary: Virtualized Android with root and Xposed inside the VM, on unrooted hosts
+Description: |-
+    RootlessVM runs a complete proot-based Android environment inside an
+    unrooted host app. Inside the container the user has root (su with
+    per-app grant/deny) and a working Xposed framework built from the
+    Vector source code (legacy Xposed API + modern libxposed API).
+    The host device is never modified.
+
+    * GPL-3.0-or-later, no trackers, no proprietary images.
+    * Container apps appear as launcher shortcuts (adaptive icons).
+    * Network firewall (deny-all) for the container via VpnService.
+    * Software rendering (llvmpipe) with honest performance reporting;
+      AVF/pKVM fast path is detected and documented as roadmap.
+
+RepoType: git
+Repo: https://github.com/guellenmade/RootlessAndroidRoot.git
+Binaries: https://github.com/guellenmade/RootlessAndroidRoot/releases/download/%v/*.apk
+
+Builds:
+  - versionName: "0.1.0"
+    versionCode: 1
+    commit: v0.1.0
+    subdir: app
+    gradle:
+      - assembleRelease
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: "0.1.0"
+CurrentVersionCode: 1

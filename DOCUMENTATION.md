@@ -265,3 +265,4 @@ decisions.
   GPL-3.0 LICENSE; NOTICE.
 - **Phase 2:** Repo layout: Gradle skeleton, manifest, launcher resources, container runtime scripts, su wrapper, proot/Vector build scripts, README; F-Droid metadata and CI follow in Phase 4.
 - **Phase 3:** Complete app source (MVVM + Compose): VM service, proot runtime, rootfs installer with checksum verification, su policy manager, Xposed module manager, firewall VPN, shortcuts with adaptive icons, in-app app grid; unit tests for fail states and version cross-check.
+- **Phase 4:** CI pipeline (app build/test, Vector + proot artifact builds, tag-driven releases) and F-Droid metadata.
