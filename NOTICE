@@ -1,0 +1,26 @@
+RootlessVM — third-party components
+===================================
+
+This project is licensed under GPL-3.0-or-later (see LICENSE).
+
+It builds against, derives from, or bundles at runtime the following
+upstream open-source components (all GPL-compatible). Exact pinned
+versions are recorded in AGENT.md §3.
+
+- Vector (github.com/JingMatrix/Vector) — GPL-3.0
+  Xposed framework continuation; source of the ART hooking injection
+  layer (LSPlant, Dobby, XposedBridge, lspd) built by vector/build_vector.sh
+  from pinned commit ddeed8c.
+- LSPlant — as bundled by Vector
+  ART method hooking engine used via Vector.
+- Dobby — as bundled by Vector
+  Inline hooking library used via Vector.
+- proot — GPL-2.0-or-later (github.com/proot-me/proot)
+  User-space syscall translation; built from source by proot/build_proot.sh.
+- Android Open Source Project (AOSP) / LineageOS-derived rootfs
+  Apache-2.0 / GPL — downloaded at first launch with SHA-256 verification,
+  not distributed as a proprietary image.
+- AndroidX / Jetpack Compose — Apache-2.0
+- kotlinx.serialization — Apache-2.0
+
+No proprietary binaries, trackers, or analytics are included.
