@@ -268,3 +268,10 @@ Fail states (clean abort + dialog, never half-working):
 
 - **Phase 5 (this commit):** DOCUMENTATION.md finalized: deep dives on shortcut mechanism and Xposed-without-Magisk chain; docs/local-testing/ bundle (Phase 6 runbook, pinned sample module notes). Known limitation added: source has not been compiled in-sandbox (no Android SDK/NDK available); CI (.github/workflows/android.yml) is the first compile gate — run it after push and fix any toolchain errors as the next task.
 - **Phase 6 (this commit):** Local test setup documented: docs/local-testing/phase6_runbook.md (install 2 container apps, verify shortcuts, install + verify one real Xposed module, su allow/deny) and pinned_sample_module.md (build a minimal legacy-API module against the pinned Vector build; version rules). On-device execution requires a physical device and real Vector artifacts; remains an open task (§9).
+
+## 11. Maintenance notes (post-phase-6)
+
+- The first compile gate is CI (`.github/workflows/android.yml`); toolchain
+  errors surfaced there must be fixed as the immediate next task.
+- When bumping the Vector pin: update §3, `vector/PINNED.md`,
+  `vector/build_vector.sh`, and the artifact-manifest cross-check.

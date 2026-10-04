@@ -337,3 +337,5 @@ mismatch, firewall refusal) are listed in the runbook.
   sample module notes), expanded device matrix pointers.
 - **Phase 6:** Local test setup documented (runbook + sample module pin);
   on-device execution remains device-dependent and is tracked in AGENT.md §9.
+
+<!-- maintained with AGENT.md; see §13 changelog -->
