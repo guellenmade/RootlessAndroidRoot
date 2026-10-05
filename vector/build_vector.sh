@@ -10,6 +10,7 @@ API="${2:?usage: build_vector.sh <workdir> <android-api-level> [ndk-dir]}"
 NDK_DIR="${3:-${ANDROID_NDK_HOME:-}}"
 PINNED_COMMIT="ddeed8c"
 
+mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
 if [ ! -d vector-src ]; then
     git clone --recurse-submodules https://github.com/JingMatrix/Vector.git vector-src
