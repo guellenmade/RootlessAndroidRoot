@@ -59,7 +59,7 @@ jobs:
         with:
           path: dist
           pattern: proot-*
-          merge-multiple: true
+          merge-multiple: false
 
       - name: Publish per-ABI releases
         run: |
