@@ -285,3 +285,18 @@ Fail states (clean abort + dialog, never half-working):
 - vector.yml uses explicit sdkmanager installs with licenses pre-accepted
   instead of android-actions/setup-android (which failed with sdkmanager exit
   code 1100755 in CI).
+
+## 13. Post-delivery status (final)
+
+- CI green: Android CI (debug + release assemble, unit tests) and Vector
+  artifacts workflow both pass on the PR branch.
+- Fixes made during CI hardening (all documented, no silent decisions):
+  AGP pinned to 8.13.0 + Gradle 8.14 in CI (AGP 9 / Gradle 9.8 conflict);
+  Kotlin Compose Compiler plugin added (required with Kotlin 2.x);
+  compile errors fixed (duplicate viewModel declaration, missing imports,
+  VpnService.prepare call, Result<Unit> mappings, File-vs-String check);
+  junit test dependency added; test shadowing removed.
+- Open tasks from §9 remain: on-device Phase 6 validation, Vector artifacts
+  built against a real rootfs (CI build step currently records the pinned
+  manifest; upstream output paths need a drift check), display/input
+  improvements, AVF path.
