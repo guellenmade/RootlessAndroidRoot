@@ -16,7 +16,9 @@ if [ ! -d vector-src ]; then
     git clone --recurse-submodules https://github.com/JingMatrix/Vector.git vector-src
 fi
 cd vector-src
-git fetch origin main
+if ! git cat-file -e "${PINNED_COMMIT}"^{commit} 2>/dev/null; then
+    git fetch --depth 1 origin "${PINNED_COMMIT}"
+fi
 git checkout "${PINNED_COMMIT}"
 git submodule update --init --recursive
 
