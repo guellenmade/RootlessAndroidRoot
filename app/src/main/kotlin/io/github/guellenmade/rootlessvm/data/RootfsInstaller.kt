@@ -6,7 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.tukaani.xz.XZFileInputStream
+import org.tukaani.xz.XZInputStream
 import java.io.File
 import java.security.MessageDigest
 
@@ -85,7 +85,7 @@ class RootfsInstaller(
 
     private fun unpack(archive: File, dest: File) {
         dest.mkdirs()
-        XZFileInputStream(archive.inputStream().buffered(1 shl 16)).use { xzIn ->
+        XZInputStream(archive.inputStream().buffered(1 shl 16)).use { xzIn ->
             TarArchiveInputStream(xzIn).use { tarIn ->
                 var entry: TarArchiveEntry?
                 while (tarIn.nextTarEntry.also { entry = it } != null) {
