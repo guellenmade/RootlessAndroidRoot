@@ -2,6 +2,7 @@ package io.github.guellenmade.rootlessvm.shortcut
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.graphics.BitmapFactory

@@ -26,9 +26,6 @@ class MainActivity : ComponentActivity() {
             }
         },
     )
-    private val viewModel: MainViewModel by viewModels {
-        viewModelFactory { initializer { MainViewModel(ServiceLocator.get()) } }
-    }
 
     private val vpnPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
