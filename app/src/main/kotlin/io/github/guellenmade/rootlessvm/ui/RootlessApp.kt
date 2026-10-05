@@ -1,5 +1,7 @@
 package io.github.guellenmade.rootlessvm.ui
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -11,6 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import io.github.guellenmade.rootlessvm.data.ContainerApp
 import io.github.guellenmade.rootlessvm.data.VmSettings
@@ -25,6 +30,7 @@ fun RootlessApp(
     state: UiState,
     onStart: () -> Unit,
     onStop: () -> Unit,
+    onPrepareVm: () -> Unit,
     onInstallApk: () -> Unit,
     onPinShortcut: (ContainerApp) -> Unit,
     onDismissFail: () -> Unit,
@@ -32,6 +38,9 @@ fun RootlessApp(
     onModuleToggle: (String, Boolean) -> Unit,
     onSaveSettings: (VmSettings) -> Unit,
     onSnapshot: (String) -> Unit,
+    displayFrame: io.github.guellenmade.rootlessvm.vm.DisplaySession.Frame?,
+    onTap: (Int, Int) -> Unit,
+    onBack: () -> Unit,
 ) {
     state.failDialog?.let { fail ->
         AlertDialog(
@@ -52,7 +61,7 @@ fun RootlessApp(
                 }
             }
             when (tab) {
-                0 -> HomeTab(state, onStart, onStop, onInstallApk, onSnapshot)
+                0 -> HomeTab(state, onStart, onStop, onPrepareVm, onInstallApk, onSnapshot, displayFrame, onTap, onBack)
                 1 -> AppsTab(state, onInstallApk, onPinShortcut)
                 2 -> RootTab(state, onSuDecision)
                 3 -> XposedTab(state, onModuleToggle)
@@ -67,10 +76,32 @@ fun HomeTab(
     state: UiState,
     onStart: () -> Unit,
     onStop: () -> Unit,
+    onPrepareVm: () -> Unit,
     onInstallApk: () -> Unit,
     onSnapshot: (String) -> Unit,
+    displayFrame: io.github.guellenmade.rootlessvm.vm.DisplaySession.Frame?,
+    onTap: (Int, Int) -> Unit,
+    onBack: () -> Unit,
 ) {
     Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
+        if (state.vmState is VmState.NotInstalled) {
+            Text("First launch: prepare the VM — downloads the rootfs (checksum-verified) and provisions proot for this device.")
+            Spacer(Modifier.height(8.dp))
+            Button(onClick = onPrepareVm) { Text("Prepare VM") }
+            state.installProgress?.let { p ->
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    when (p) {
+                        is io.github.guellenmade.rootlessvm.data.RootfsInstaller.Progress.Downloading ->
+                            "Downloading rootfs… ${(p.bytes / 1048576)}/${p.total / 1048576} MB"
+                        is io.github.guellenmade.rootlessvm.data.RootfsInstaller.Progress.Verifying -> "Verifying checksum…"
+                        is io.github.guellenmade.rootlessvm.data.RootfsInstaller.Progress.Unpacking -> "Unpacking…"
+                        io.github.guellenmade.rootlessvm.data.RootfsInstaller.Progress.Done -> "Rootfs ready."
+                    },
+                )
+            }
+            return@Column
+        }
         Text(
             when (state.vmState) {
                 VmState.NotInstalled -> "VM not installed — download the rootfs in Settings first."
@@ -97,6 +128,37 @@ fun HomeTab(
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray,
             )
+        }
+        if (state.vmState is VmState.Running) {
+            Spacer(Modifier.height(16.dp))
+            Text(
+                "Container display (software-rendered, streamed): %.1f fps".format(displayFrame?.fps ?: 0.0),
+                style = MaterialTheme.typography.labelMedium,
+            )
+            displayFrame?.bitmap?.let { bmp ->
+                androidx.compose.foundation.Image(
+                    bitmap = bmp.asImageBitmap(),
+                    contentDescription = "Container display",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(bmp.width.toFloat() / bmp.height)
+                        .pointerInput(Unit) {
+                            detectTapGestures { offset ->
+                                onTap(
+                                    (offset.x / size.width * bmp.width).toInt(),
+                                    (offset.y / size.height * bmp.height).toInt(),
+                                )
+                            }
+                        },
+                )
+            } ?: Text(
+                displayFrame?.lastError?.let { "Display stream error: $it" } ?: "Waiting for container display…",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray,
+            )
+            Row {
+                TextButton(onClick = onBack) { Text("Back") }
+            }
         }
         Spacer(Modifier.height(16.dp))
         OutlinedButton(onClick = onInstallApk) { Text("Install APK into container") }

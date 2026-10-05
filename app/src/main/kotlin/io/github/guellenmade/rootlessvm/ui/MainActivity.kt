@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -51,11 +52,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val state by viewModel.ui.collectAsState()
+            val frame by viewModel.display.frame.collectAsState()
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
             RootlessApp(
                 state = state,
                 onStart = { viewModel.startVm(this) },
                 onStop = { viewModel.stopVm(this) },
+                onPrepareVm = { viewModel.prepareVm(this) },
                 onInstallApk = { apkPicker.launch("application/vnd.android.package-archive") },
+                displayFrame = frame,
+                onTap = { x, y -> scope.launch { viewModel.display.tap(x, y) } },
+                onBack = { scope.launch { viewModel.display.back() } },
                 onPinShortcut = { app ->
                     viewModel.rescan(this)
                     io.github.guellenmade.rootlessvm.di.ServiceLocator.get().shortcutSync.run {

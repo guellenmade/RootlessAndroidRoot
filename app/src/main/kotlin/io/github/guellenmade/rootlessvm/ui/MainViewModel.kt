@@ -7,6 +7,7 @@ import io.github.guellenmade.rootlessvm.data.ContainerApp
 import io.github.guellenmade.rootlessvm.data.RootfsInstaller
 import io.github.guellenmade.rootlessvm.data.RootfsManifest
 import io.github.guellenmade.rootlessvm.data.VmSettings
+import io.github.guellenmade.rootlessvm.vm.DisplaySession
 import io.github.guellenmade.rootlessvm.di.ServiceLocator
 import io.github.guellenmade.rootlessvm.root.SuEntry
 import io.github.guellenmade.rootlessvm.root.SuLogEntry
@@ -38,10 +39,18 @@ class MainViewModel(private val locator: ServiceLocator) : ViewModel() {
     val ui: StateFlow<UiState> = _ui
 
     val session = ContainerSession(locator.paths, locator.rootfsManifest)
+    val display = DisplaySession(session, locator.paths)
 
     init {
         viewModelScope.launch {
-            locator.vmController.state.collect { s -> _ui.value = _ui.value.copy(vmState = s) }
+            locator.vmController.state.collect { s ->
+                _ui.value = _ui.value.copy(vmState = s)
+                when (s) {
+                    is VmState.Running -> display.start()
+                    is VmState.Stopped, is VmState.Failed -> display.stop()
+                    else -> Unit
+                }
+            }
         }
         refresh()
     }
@@ -88,8 +97,20 @@ class MainViewModel(private val locator: ServiceLocator) : ViewModel() {
         }
     }
 
-    fun downloadRootfs(manifest: RootfsManifest) {
+    fun prepareVm(context: Context) {
         viewModelScope.launch {
+            val abi = locator.prootProvisioner.let { io.github.guellenmade.rootlessvm.vm.BuildAbi.current() }
+            locator.prootProvisioner.provision(context).onFailure {
+                _ui.value = _ui.value.copy(failDialog = FailState.UnsupportedAbi(abi))
+                return@launch
+            }
+            val catalogText = locator.rootfsCatalog.bundledCatalogText(context.assets)
+            val catalog = locator.rootfsCatalog.parse(catalogText)
+            val manifest = locator.rootfsCatalog.selectFor(abi, catalog)
+            if (manifest == null) {
+                _ui.value = _ui.value.copy(failDialog = FailState.UnsupportedAbi(abi))
+                return@launch
+            }
             locator.rootfsInstaller.install(manifest) { p ->
                 _ui.value = _ui.value.copy(installProgress = p)
             }.onFailure { e ->

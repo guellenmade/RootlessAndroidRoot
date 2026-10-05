@@ -300,3 +300,39 @@ Fail states (clean abort + dialog, never half-working):
   built against a real rootfs (CI build step currently records the pinned
   manifest; upstream output paths need a drift check), display/input
   improvements, AVF path.
+
+## 14. ADRs and changes from the "build everything" pass (2026-10-05)
+
+### ADR-008: Rootfs catalog as bundled asset + GitHub Releases
+**Decision:** `assets/rootfs/catalog.json` (pinned catalog, shipped in the APK)
+is the manifest source; images live on the project's GitHub Releases.
+**Rationale:** FOSS and auditable: the catalog is versioned in-repo, images are
+checksum-pinned, and no proprietary mirror is involved. The catalog's SHA-256
+fields are placeholders until the first rootfs image is actually built and
+published (tracked in §9); the installer still refuses mismatches.
+
+### ADR-009: Proot provisioning chain
+**Decision:** ProotProvisioner resolves the proot binary per ABI:
+1. bundled in APK assets (`bin/proot/<abi>/proot`) — CI release builds pack it;
+2. else downloaded from GitHub Releases (`proot-<abi>` tag) with SHA-256 check;
+3. else UnsupportedAbi fail state — clean abort.
+**Rationale:** keeps the APK small on non-release builds, guarantees the binary
+always comes from a verifiable source, and never leaves the app half-working.
+
+### Changes vs earlier phases (documented, not silent)
+- **First-launch flow is real now:** Home tab shows "Prepare VM" which
+  provisions proot AND downloads/verifies/unpacks the rootfs. Previously the
+  download path existed but was unreachable from the UI.
+- **DisplaySession added (implements ADR-006):** polls container screencap,
+  decodes frames, measures fps, injects tap/back input; Home tab renders the
+  container display live with honest fps reporting.
+- **FirewallVpnService pump rewritten:** the old loop opened a new
+  FileOutputStream per packet (FD churn); now a single read loop drops packets
+  (true deny-all per ADR-007).
+- **ServiceLocator:** added prootProvisioner + rootfsCatalog; fixed missing
+  package declaration introduced earlier.
+
+### Phase changelog addition
+- **Build-everything pass:** RootfsCatalog + bundled catalog asset,
+  ProotProvisioner, DisplaySession, firewall pump fix, UI wiring (Prepare VM,
+  live display, input injection, fps readout).

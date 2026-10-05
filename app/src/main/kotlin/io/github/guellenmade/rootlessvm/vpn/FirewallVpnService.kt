@@ -5,7 +5,6 @@ import android.net.VpnService
 import android.os.ParcelFileDescriptor
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.nio.ByteBuffer
 
 /**
  * Deny-all firewall for the app UID (ADR-007): all traffic of this app
@@ -31,25 +30,31 @@ class FirewallVpnService : VpnService() {
             .addRoute("0.0.0.0", 0)
             .setMtu(1400)
             .establish() ?: run {
-                stopSelf()
-                return START_NOT_STICKY
-            }
+            stopSelf()
+            return START_NOT_STICKY
+        }
         tun = conn
         running = true
         pumpThread = Thread {
             val fd = conn.fileDescriptor
             val input = FileInputStream(fd)
-            val buf = ByteBuffer.allocateDirect(32767)
+            val output = FileOutputStream(fd)
+            val buf = ByteArray(32767)
             while (running) {
-                runCatching {
-                    buf.clear()
-                    val n = input.read(buf.array() ?: ByteArray(0))
-                    if (n > 0) {
-                        FileOutputStream(fd).use { }
-                    }
+                val n = runCatching { input.read(buf) }.getOrDefault(-1)
+                if (n > 0) {
+                    // Deny-all: packets are read and dropped; nothing is
+                    // forwarded, so the container has no egress (ADR-007).
+                    continue
                 }
+                if (n < 0) break
             }
-        }.apply { start() }
+            runCatching { output.close() }
+            runCatching { input.close() }
+        }.apply {
+            name = "rootlessvm-firewall-pump"
+            start()
+        }
         return START_STICKY
     }
 
@@ -60,7 +65,6 @@ class FirewallVpnService : VpnService() {
 
     private fun stopFirewall() {
         running = false
-        pumpThread?.interrupt()
         tun?.close()
         tun = null
     }
