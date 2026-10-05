@@ -12,3 +12,7 @@
 -dontnote org.apache.commons.compress.**
 -keep class org.apache.commons.compress.** { *; }
 -keep class org.tukaani.xz.** { *; }
+# Commons Compress optional compressor deps are not shipped
+-dontwarn com.github.luben.zstd.**
+-dontwarn org.brotli.dec.**
+-dontwarn org.objectweb.asm.**
