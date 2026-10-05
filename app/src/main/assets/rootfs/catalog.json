@@ -19,5 +19,28 @@
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "sizeBytes": 1250000000
     }
+  ],
+  "vector": [
+    {
+      "component": "libvector_inject.so",
+      "commit": "ddeed8c",
+      "apiLevel": 33,
+      "url": "https://github.com/guellenmade/RootlessAndroidRoot/releases/download/vector-aosp-13/libvector_inject.so",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "component": "xposed.dex",
+      "commit": "ddeed8c",
+      "apiLevel": 33,
+      "url": "https://github.com/guellenmade/RootlessAndroidRoot/releases/download/vector-aosp-13/xposed.dex",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "component": "vector-manager.apk",
+      "commit": "ddeed8c",
+      "apiLevel": 33,
+      "url": "https://github.com/guellenmade/RootlessAndroidRoot/releases/download/vector-aosp-13/vector-manager.apk",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
   ]
 }

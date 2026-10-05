@@ -84,21 +84,30 @@ fun HomeTab(
     onBack: () -> Unit,
 ) {
     Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
-        if (state.vmState is VmState.NotInstalled) {
-            Text("First launch: prepare the VM — downloads the rootfs (checksum-verified) and provisions proot for this device.")
+        if (state.vmState is VmState.NotInstalled || state.prepareStep != null) {
+            Text(
+                "First launch: download everything — proot runtime, the Android rootfs " +
+                    "(checksum-verified), and the Xposed (Vector) framework artifacts for this device. " +
+                    "Everything lands in app-private storage; the host is never modified.",
+            )
             Spacer(Modifier.height(8.dp))
-            Button(onClick = onPrepareVm) { Text("Prepare VM") }
-            state.installProgress?.let { p ->
+            val busy = state.prepareStep != null
+            Button(onClick = onPrepareVm, enabled = !busy) {
+                Text(if (busy) "Downloading…" else "Download everything")
+            }
+            state.prepareStep?.let { step ->
                 Spacer(Modifier.height(8.dp))
-                Text(
-                    when (p) {
-                        is io.github.guellenmade.rootlessvm.data.RootfsInstaller.Progress.Downloading ->
-                            "Downloading rootfs… ${(p.bytes / 1048576)}/${p.total / 1048576} MB"
-                        is io.github.guellenmade.rootlessvm.data.RootfsInstaller.Progress.Verifying -> "Verifying checksum…"
-                        is io.github.guellenmade.rootlessvm.data.RootfsInstaller.Progress.Unpacking -> "Unpacking…"
-                        io.github.guellenmade.rootlessvm.data.RootfsInstaller.Progress.Done -> "Rootfs ready."
-                    },
-                )
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+                Text(step, style = MaterialTheme.typography.bodyMedium)
+            }
+            state.installProgress?.let { p ->
+                if (p is io.github.guellenmade.rootlessvm.data.RootfsInstaller.Progress.Downloading) {
+                    Text(
+                        "${p.bytes / 1048576} / ${p.total / 1048576} MB",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                    )
+                }
             }
             return@Column
         }

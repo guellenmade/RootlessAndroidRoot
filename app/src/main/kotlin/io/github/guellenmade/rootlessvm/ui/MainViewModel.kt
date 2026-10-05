@@ -23,6 +23,7 @@ import java.io.File
 
 data class UiState(
     val vmState: VmState = VmState.NotInstalled,
+    val prepareStep: String? = null,
     val apps: List<ContainerApp> = emptyList(),
     val suEntries: List<SuEntry> = emptyList(),
     val suLogs: List<SuLogEntry> = emptyList(),
@@ -98,27 +99,75 @@ class MainViewModel(private val locator: ServiceLocator) : ViewModel() {
     }
 
     fun prepareVm(context: Context) {
+        if (_ui.value.prepareStep != null) return
         viewModelScope.launch {
-            val abi = locator.prootProvisioner.let { io.github.guellenmade.rootlessvm.vm.BuildAbi.current() }
-            locator.prootProvisioner.provision(context).onFailure {
-                _ui.value = _ui.value.copy(failDialog = FailState.UnsupportedAbi(abi))
-                return@launch
-            }
+            val abi = io.github.guellenmade.rootlessvm.vm.BuildAbi.current()
+
+            _ui.value = _ui.value.copy(prepareStep = "Checking device architecture…")
             val catalogText = locator.rootfsCatalog.bundledCatalogText(context.assets)
             val catalog = locator.rootfsCatalog.parse(catalogText)
             val manifest = locator.rootfsCatalog.selectFor(abi, catalog)
             if (manifest == null) {
-                _ui.value = _ui.value.copy(failDialog = FailState.UnsupportedAbi(abi))
+                _ui.value = _ui.value.copy(
+                    prepareStep = null,
+                    failDialog = FailState.UnsupportedAbi(abi),
+                )
                 return@launch
             }
+
+            _ui.value = _ui.value.copy(prepareStep = "Downloading proot runtime…")
+            locator.prootProvisioner.provision(context).onFailure {
+                _ui.value = _ui.value.copy(
+                    prepareStep = null,
+                    failDialog = FailState.UnsupportedAbi(abi),
+                )
+                return@launch
+            }
+
+            _ui.value = _ui.value.copy(prepareStep = "Downloading rootfs (checksum-verified)…")
             locator.rootfsInstaller.install(manifest) { p ->
-                _ui.value = _ui.value.copy(installProgress = p)
+                _ui.value = _ui.value.copy(
+                    installProgress = p,
+                    prepareStep = when (p) {
+                        is RootfsInstaller.Progress.Downloading -> "Downloading rootfs… ${p.bytes / 1048576}/${p.total / 1048576} MB"
+                        is RootfsInstaller.Progress.Verifying -> "Verifying rootfs checksum…"
+                        is RootfsInstaller.Progress.Unpacking -> "Unpacking rootfs…"
+                        RootfsInstaller.Progress.Done -> "Rootfs ready."
+                    },
+                )
             }.onFailure { e ->
                 _ui.value = _ui.value.copy(
-                    failDialog = failFromReason(e.message ?: "unknown"),
+                    prepareStep = null,
                     installProgress = null,
+                    failDialog = failFromReason(e.message ?: "unknown"),
                 )
+                return@launch
             }
+
+            _ui.value = _ui.value.copy(prepareStep = "Downloading Xposed (Vector) framework…")
+            val vector = catalog.vectorArtifacts()
+            val provisioner = io.github.guellenmade.rootlessvm.vm.VectorProvisioner(locator.paths)
+            provisioner.downloadAndDeploy(context, vector) { step ->
+                _ui.value = _ui.value.copy(
+                    prepareStep = when (step) {
+                        io.github.guellenmade.rootlessvm.vm.VectorProvisioner.Step.DownloadVector ->
+                            "Downloading Vector artifacts (LSPlant/Dobby/XposedBridge)…"
+                        io.github.guellenmade.rootlessvm.vm.VectorProvisioner.Step.DeployVector ->
+                            "Injecting Vector into the rootfs (zygote patch)…"
+                        io.github.guellenmade.rootlessvm.vm.VectorProvisioner.Step.Done ->
+                            "Xposed framework ready."
+                        else -> _ui.value.prepareStep
+                    },
+                )
+            }.onFailure { e ->
+                _ui.value = _ui.value.copy(
+                    prepareStep = null,
+                    failDialog = failFromReason(e.message ?: "unknown"),
+                )
+                return@launch
+            }
+
+            _ui.value = _ui.value.copy(prepareStep = null, installProgress = RootfsInstaller.Progress.Done)
             refresh()
         }
     }

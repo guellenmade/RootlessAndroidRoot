@@ -48,7 +48,17 @@ data class CatalogImage(
 )
 
 @kotlinx.serialization.Serializable
+data class CatalogVectorArtifact(
+    val component: String,
+    val commit: String,
+    val apiLevel: Int,
+    val url: String,
+    val sha256: String,
+)
+
+@kotlinx.serialization.Serializable
 data class Catalog(
     val primaryApi: Int,
     val images: List<CatalogImage>,
+    val vector: List<CatalogVectorArtifact> = emptyList(),
 )
