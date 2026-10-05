@@ -33,10 +33,7 @@ jobs:
       - name: Build Vector injection artifacts (pinned commit)
         run: |
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018"
-          vector/build_vector.sh "$GITHUB_WORKSPACE/vector-work" 33 "$ANDROID_NDK_HOME" || true
-          if [ ! -f "$GITHUB_WORKSPACE/vector-work/out/artifact-manifest.json" ]; then
-            echo "::warning::Vector build did not produce artifacts (upstream layout drift); recording pinned manifest only"
-          fi
+          vector/build_vector.sh "$GITHUB_WORKSPACE/vector-work" 33 "$ANDROID_NDK_HOME"
 
       - name: Build proot (arm64)
         run: |
