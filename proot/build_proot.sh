@@ -43,6 +43,13 @@ if [ ! -f "${TALLOC_PREFIX}/lib/libtalloc.a" ]; then
         make -j"$(nproc)"
         make install
     )
+    # waf only installs a shared lib; build a static archive from the single
+    # talloc.c source with the NDK compiler so -static linking works.
+    (
+        cd "talloc-${TALLOC_VERSION}"
+        "${NDK_CC}" -c talloc.c -I. -o talloc.o
+        llvm-ar rcs "${TALLOC_PREFIX}/lib/libtalloc.a" talloc.o
+    )
 fi
 
 # ---- proot (static, cross-compiled) ----
