@@ -79,5 +79,5 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --title "Vector artifacts (API 33)" \
             --notes "Vector (Xposed framework) injection artifacts built from pinned commit ddeed8c (v2.2 lineage) for Android 13 / API 33: libvector_inject.so, xposed.dex, vector-manager.apk, vector-daemon.apk." \
-            dist/out/libvector_inject.so dist/out/xposed.dex dist/out/vector-manager.apk dist/out/vector-daemon.apk \
-            || gh release upload "vector-aosp-13" dist/out/libvector_inject.so dist/out/xposed.dex dist/out/vector-manager.apk dist/out/vector-daemon.apk --clobber --repo "$GITHUB_REPOSITORY"
+            dist/vector-work/out/libvector_inject.so dist/vector-work/out/xposed.dex dist/vector-work/out/vector-manager.apk dist/vector-work/out/vector-daemon.apk \
+            || gh release upload "vector-aosp-13" dist/vector-work/out/libvector_inject.so dist/vector-work/out/xposed.dex dist/vector-work/out/vector-manager.apk dist/vector-work/out/vector-daemon.apk --clobber --repo "$GITHUB_REPOSITORY"
