@@ -76,8 +76,12 @@ fi
     # explicitly or the link fails with undefined talloc_* symbols.
     # Static link mirrors upstream release builds and avoids NDK .so
     # arch mismatches at link time.
+    # STRIP/OBJCOPY/OBJDUMP default to host binutils, which cannot parse
+    # target-arch ELF; pass the NDK llvm tools as make variables
+    # (command-line vars override the makefile's `=` assignments).
     make -C src -j"$(nproc)" V=1 WITHOUT_PYTHON=1 \
         CC="${NDK_CC}" \
+        STRIP=llvm-strip OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump \
         LDFLAGS="-static -L${TALLOC_PREFIX}/lib -ltalloc" \
         PKG_CONFIG="$(command -v pkg-config)"
 )
