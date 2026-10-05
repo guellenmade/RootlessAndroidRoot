@@ -41,7 +41,7 @@ class VmController(
         if (artifacts != null && manifest != null && artifacts.targetApi != manifest.apiLevel) {
             return FailState.RootfsVersionIncompatible(manifest.apiLevel, artifacts.targetApi)
         }
-        if (!File(paths.prootBin).exists()) {
+        if (!paths.prootBin.exists()) {
             return FailState.ProotBootFailure(-1)
         }
         return null

@@ -29,6 +29,7 @@ class ContainerSession(
             staged.parentFile.mkdirs()
             apk.copyTo(staged, overwrite = true)
             exec(listOf("/system/bin/pm", "install", "-r", "/data/staging/base.apk")).getOrThrow()
+            Unit
         }
     }
 

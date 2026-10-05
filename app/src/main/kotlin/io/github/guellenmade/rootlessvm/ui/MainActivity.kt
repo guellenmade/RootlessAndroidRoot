@@ -72,7 +72,7 @@ class MainActivity : ComponentActivity() {
     }
 
     fun requestVpnPermission(prepared: Intent?) {
-        vpnPermissionLauncher.launch(prepared)
+        prepared?.let { vpnPermissionLauncher.launch(it) }
     }
 
     private fun startVpnAndVm() {

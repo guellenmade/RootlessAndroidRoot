@@ -69,7 +69,7 @@ class MainViewModel(private val locator: ServiceLocator) : ViewModel() {
             return
         }
         if (_ui.value.settings.firewallEnabled) {
-            val prepared = io.github.guellenmade.rootlessvm.vpn.FirewallVpnService.prepare(context)
+            val prepared = android.net.VpnService.prepare(context)
             if (prepared != null) {
                 (context as? MainActivity)?.requestVpnPermission(prepared)
                 return
