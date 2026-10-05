@@ -6,6 +6,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  ANDROID_HOME: /usr/local/lib/android/sdk
+
 jobs:
   vector:
     runs-on: ubuntu-latest
@@ -18,23 +21,29 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Install Android SDK + NDK
-        uses: android-actions/setup-android@v3
+      - name: Install Android SDK components
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-33" "ndk;27.2.12479018" "cmake;3.22.1" >/dev/null
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build Vector injection artifacts (pinned commit)
         run: |
-          vector/build_vector.sh "$GITHUB_WORKSPACE/vector-work" 33 "$ANDROID_HOME/ndk-bundle" || true
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018"
+          vector/build_vector.sh "$GITHUB_WORKSPACE/vector-work" 33 "$ANDROID_NDK_HOME" || true
           if [ ! -f "$GITHUB_WORKSPACE/vector-work/out/artifact-manifest.json" ]; then
-            echo "::warning::Vector build did not produce artifacts (upstream layout drift); job continues to record the pinned manifest only"
+            echo "::warning::Vector build did not produce artifacts (upstream layout drift); recording pinned manifest only"
           fi
 
       - name: Build proot (arm64)
-        run: proot/build_proot.sh "$GITHUB_WORKSPACE/proot-work" arm64-v8a || echo "::warning::proot build needs Android NDK toolchain in PATH"
+        run: |
+          export PATH="$ANDROID_HOME/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+          proot/build_proot.sh "$GITHUB_WORKSPACE/proot-work" arm64-v8a || echo "::warning::proot build needs Android NDK toolchain in PATH"
 
-      - name: Upload Vector artifacts
+      - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:

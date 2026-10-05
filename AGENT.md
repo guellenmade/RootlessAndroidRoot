@@ -275,3 +275,13 @@ Fail states (clean abort + dialog, never half-working):
   errors surfaced there must be fixed as the immediate next task.
 - When bumping the Vector pin: update §3, `vector/PINNED.md`,
   `vector/build_vector.sh`, and the artifact-manifest cross-check.
+
+## 12. CI fix note (post-phase)
+
+- AGP pinned to 8.13.0 (with kotlin-android plugin): AGP 9.0 failed in CI
+  ("Cannot add extension with name kotlin" — built-in Kotlin support conflicts
+  with the standalone kotlin-android plugin). Decision recorded here instead of
+  silently changing ADRs; revisit when AGP 9 stabilizes.
+- vector.yml uses explicit sdkmanager installs with licenses pre-accepted
+  instead of android-actions/setup-android (which failed with sdkmanager exit
+  code 1100755 in CI).
