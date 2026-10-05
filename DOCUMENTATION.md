@@ -355,3 +355,6 @@ mismatch, firewall refusal) are listed in the runbook.
 - **v0.1.0-alpha2:** signing fix — release APKs are always signed
   (debug-signing fallback when no release keystore is configured); broken
   unsigned asset removed from v0.1.0-alpha.
+- **v0.1.0-alpha3:** fixed false "unsupported ABI" error — real cause
+  (missing runtime artifacts) now reported accurately; ABI detection via
+  Build.SUPPORTED_ABIS.
