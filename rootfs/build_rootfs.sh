@@ -26,12 +26,12 @@ mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
 
 SDKMGR="${ANDROID_HOME:?ANDROID_HOME must be set}/cmdline-tools/latest/bin/sdkmanager"
-IMGDIR="${ANDROID_HOME}/system-images/android/${API}/default/${ABI}"
+IMGDIR="${ANDROID_HOME}/system-images/android-${API}/default/${ABI}"
 
 if [ ! -f "${IMGDIR}/system.img" ]; then
     yes | "${SDKMGR}" --licenses >/dev/null 2>&1 || true
     "${SDKMGR}" --verbose "system-images;android-${API};default;${ABI}"
-    ls -la "${ANDROID_HOME}/system-images/android/${API}/default/" || true
+    ls -la "${ANDROID_HOME}/system-images/android-${API}/default/" || true
 fi
 
 SYSTEM_IMG="${IMGDIR}/system.img"
