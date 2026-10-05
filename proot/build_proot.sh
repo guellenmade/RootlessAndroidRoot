@@ -47,12 +47,12 @@ if [ ! -f "${TALLOC_PREFIX}/lib/libtalloc.a" ]; then
     # talloc.c source with the NDK compiler so -static linking works.
     (
         cd "talloc-${TALLOC_VERSION}"
-        # replace.h lives in lib/replace; compile the bundled replace
-        # sources too so every symbol talloc.c references resolves in the
-        # static archive.
-        "${NDK_CC}" -c talloc.c -I. -Ilib/replace -o talloc.o
-        "${NDK_CC}" -c lib/replace/replace.c -Ilib/replace -o replace.o
-        "${NDK_CC}" -c lib/replace/closefrom.c -Ilib/replace -o closefrom.o
+        # replace.h lives in lib/replace and includes waf-generated
+        # config.h from bin/default; compile the bundled replace sources too
+        # so every symbol talloc.c references resolves in the static archive.
+        "${NDK_CC}" -c talloc.c -I. -Ilib/replace -Ibin/default -o talloc.o
+        "${NDK_CC}" -c lib/replace/replace.c -Ilib/replace -Ibin/default -o replace.o
+        "${NDK_CC}" -c lib/replace/closefrom.c -Ilib/replace -Ibin/default -o closefrom.o
         llvm-ar rcs "${TALLOC_PREFIX}/lib/libtalloc.a" talloc.o replace.o closefrom.o
     )
 fi
