@@ -75,6 +75,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ls -R dist | head -40
+          if gh release view "vector-aosp-13" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release vector-aosp-13 already exists; keeping pinned assets (catalog checksums must stay stable)."
+            exit 0
+          fi
           gh release create "vector-aosp-13" \
             --repo "$GITHUB_REPOSITORY" \
             --title "Vector artifacts (API 33)" \

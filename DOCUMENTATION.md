@@ -447,3 +447,13 @@ mismatch, firewall refusal) are listed in the runbook.
   `rootfs-aosp-13-arm64.tar.xz` while the published release asset is named
   `rootfs-aosp-13-arm64-v8a.tar.xz`. The catalog now uses the correct URL;
   checksums were already correct and unchanged.
+
+## Changelog 2026-10-05 - checksum drift fixed, releases pinned (alpha9)
+
+- Verified against the live release assets that the in-app catalog
+  checksums had gone stale: the rootfs/vector artifact workflows were
+  re-publishing the same release tags on every push, replacing the tarballs
+  with non-identical rebuilds. The catalog now carries the actual published
+  sha256 values (recomputed from the downloaded assets).
+- The artifact publish jobs now skip if the release already exists, so
+  checksums cannot silently drift again.

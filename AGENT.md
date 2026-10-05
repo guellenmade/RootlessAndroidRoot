@@ -591,3 +591,24 @@ entry was already correct.
 Fix: catalog.json arm64 URL now points at `rootfs-aosp-13-arm64-v8a.tar.xz`.
 This closes the chain of masked errors: fabricated -4 -> UnexpectedError ->
 real 404 -> fixed catalog entry.
+
+### 28. Artifact drift: releases were rebuilt on every push (2026-10-05)
+
+After fixing the arm64 URL (ADR/sec 27), a HEAD check showed the published
+rootfs assets no longer matched the catalog checksums: the rootfs and vector
+workflows re-published `rootfs-aosp-13` / `vector-aosp-13` on EVERY push to
+main (`gh release upload --clobber`), and the tarballs are not reproducible,
+so checksums drifted (arm64 sha256 is now 6407d26d..., vector-manager.apk
+196f1766...). The app would have failed checksum verification right after a
+successful download.
+
+Fixes:
+- catalog.json updated to the CURRENT published sha256/size for all four
+  rootfs entries' images and vector-manager.apk (recomputed locally from the
+  downloaded release assets, not guessed).
+- rootfs-release.yml publish job now (a) only runs on push to main and
+  (b) skips entirely if the release already exists — pinned assets are never
+  clobbered again. vector.yml publish got the same existence guard.
+- Rule going forward: published artifact releases are immutable; to ship new
+  artifacts, publish a NEW release tag and update the catalog in the same
+  commit.

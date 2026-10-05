@@ -36,6 +36,7 @@ jobs:
 
   publish:
     needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,6 +50,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          if gh release view "rootfs-aosp-13" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release rootfs-aosp-13 already exists; keeping pinned assets (catalog checksums must stay stable)."
+            exit 0
+          fi
           gh release create "rootfs-aosp-13" \
             --repo "$GITHUB_REPOSITORY" \
             --title "rootfs AOSP 13 (API 33)" \

@@ -9,8 +9,8 @@
         "arm64-v8a"
       ],
       "url": "https://github.com/guellenmade/RootlessAndroidRoot/releases/download/rootfs-aosp-13/rootfs-aosp-13-arm64-v8a.tar.xz",
-      "sha256": "8adc2e836f698c596afb27bf6fd4ac69daa674bbc42082fb72f0c15b0c999497",
-      "sizeBytes": 699185124
+      "sha256": "6407d26d1a12714cb27f65c2c7829c30cd496fb90f300707791815ccf2fe001a",
+      "sizeBytes": 699220692
     },
     {
       "id": "aosp-13-x86_64",
@@ -20,8 +20,8 @@
         "x86_64"
       ],
       "url": "https://github.com/guellenmade/RootlessAndroidRoot/releases/download/rootfs-aosp-13/rootfs-aosp-13-x86_64.tar.xz",
-      "sha256": "cf6b8ce56d2507858f8f2f4349e1cbc1d1dcc0aec10011234db20a6ad3ade045",
-      "sizeBytes": 694652028
+      "sha256": "f71ddbee5672cc40714132dcd702234297327505806500acdba3e5d6e0e0b625",
+      "sizeBytes": 694676856
     }
   ],
   "vector": [
@@ -44,7 +44,7 @@
       "commit": "ddeed8c",
       "apiLevel": 33,
       "url": "https://github.com/guellenmade/RootlessAndroidRoot/releases/download/vector-aosp-13/vector-manager.apk",
-      "sha256": "8bee9eed257c2f3f082221686dc601ede0abdb8c8415db187fc9c755dfcb9d85"
+      "sha256": "196f17669b27b82ea880fee0340054f75bf216b474b7c3a13d1fd449e82c1a5c"
     }
   ]
 }
