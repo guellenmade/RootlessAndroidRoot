@@ -8,6 +8,7 @@ import io.github.guellenmade.rootlessvm.data.RootfsInstaller
 import io.github.guellenmade.rootlessvm.data.RootfsManifest
 import io.github.guellenmade.rootlessvm.data.VmSettings
 import io.github.guellenmade.rootlessvm.vm.DisplaySession
+import io.github.guellenmade.rootlessvm.vm.vectorArtifacts
 import io.github.guellenmade.rootlessvm.di.ServiceLocator
 import io.github.guellenmade.rootlessvm.root.SuEntry
 import io.github.guellenmade.rootlessvm.root.SuLogEntry
