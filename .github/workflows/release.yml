@@ -19,8 +19,10 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Gradle
+      - name: Set up Gradle (pinned 8.14, required by AGP 8.x)
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14"
 
       - name: Build release APK
         run: gradle :app:assembleRelease --no-daemon
