@@ -361,3 +361,11 @@ the button either ends fully provisioned or fails cleanly with a dialog.
 Catalog now carries a `vector` artifact list (component/commit/apiLevel/url/
 sha256); SHA-256 fields remain placeholders until real artifacts are
 published (§9).
+
+### 17. First release
+- `v0.1.0-alpha` tagged and published via release.yml; APK
+  (app-release-unsigned.apk) attached: https://github.com/guellenmade/RootlessAndroidRoot/releases/tag/v0.1.0-alpha
+- Release notes state honestly that catalog artifacts are placeholders and
+  the download flow aborts cleanly at checksum verification until real
+  rootfs/proot/Vector artifacts are published (§9).
+- APK is unsigned; signing setup (F-Droid or maintainer key) is an open task.

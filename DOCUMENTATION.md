@@ -349,3 +349,6 @@ mismatch, firewall refusal) are listed in the runbook.
   provisions proot, downloads + verifies + unpacks the rootfs, and downloads +
   deploys the Vector (Xposed) artifacts into the rootfs, with live step
   progress and clean-abort fail dialogs.
+- **v0.1.0-alpha:** first release published via CI (unsigned APK attached);
+  catalog artifacts remain placeholders — download flow aborts cleanly at
+  checksum until real artifacts are published.
