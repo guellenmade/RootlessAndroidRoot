@@ -28,6 +28,7 @@ class ProotCommandBuilder(private val paths: ContainerPaths) {
             "-b", "${paths.containerTmp.absolutePath}:/tmp",
             "-b", "${paths.containerData.absolutePath}:/data",
             "-b", "${paths.containerSdcard.absolutePath}:/sdcard",
+            "-b", "${paths.runtimeDir.absolutePath}:/vm",
         ) + listOf(
             "/system/bin/sh", "/vm/entry.sh",
         ) + entryArgs
@@ -43,6 +44,7 @@ class ProotCommandBuilder(private val paths: ContainerPaths) {
             "-b", "${paths.containerTmp.absolutePath}:/tmp",
             "-b", "${paths.containerData.absolutePath}:/data",
             "-b", "${paths.containerSdcard.absolutePath}:/sdcard",
+            "-b", "${paths.runtimeDir.absolutePath}:/vm",
         ) + command
 }
 

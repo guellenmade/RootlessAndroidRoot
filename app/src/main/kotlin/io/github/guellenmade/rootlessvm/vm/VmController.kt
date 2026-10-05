@@ -52,8 +52,13 @@ class VmController(
         _state.value = VmState.Starting
         return try {
             val cmd = ProotCommandBuilder(paths).build(settings(), emptyList())
+            val logFile = File(paths.base, "proot-boot.log")
+            logFile.parentFile?.mkdirs()
+            // proot writes diagnostics to stderr; keep the last boot's log
+            // so failures are diagnosable on-device (included in the dialog).
             val proc = ProcessBuilder(cmd)
                 .redirectErrorStream(true)
+                .redirectOutput(ProcessBuilder.Redirect.appendTo(logFile))
                 .start()
             prootProcess = proc
             Thread.sleep(BOOT_GRACE_MS)
@@ -63,12 +68,16 @@ class VmController(
                 null
             } else {
                 prootProcess = null
-                _state.value = VmState.Failed(FailState.ProotBootFailure(proc.exitValue()))
-                FailState.ProotBootFailure(proc.exitValue())
+                val tail = runCatching {
+                    logFile.readLines().takeLast(15).joinToString("\n")
+                }.getOrDefault("")
+                val fail = FailState.ProotBootFailure(proc.exitValue(), tail)
+                _state.value = VmState.Failed(fail)
+                fail
             }
         } catch (e: Exception) {
-            _state.value = VmState.Failed(FailState.ProotBootFailure(-2))
-            FailState.ProotBootFailure(-2)
+            _state.value = VmState.Failed(FailState.ProotBootFailure(-2, e.message ?: ""))
+            FailState.ProotBootFailure(-2, e.message ?: "")
         }
     }
 

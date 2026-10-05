@@ -42,7 +42,19 @@ class VectorProvisioner(private val paths: ContainerPaths) {
         runCatching {
             copyAsset(context, "runtime/su", File(rootfs, "system/xbin/su"), executable = true)
             copyAsset(context, "runtime/policy_check.sh", File(rootfs, "system/xbin/policy_check.sh"), executable = true)
+            installVmScripts(context)
         }
+
+    /**
+     * /vm inside the container is a bind of the host runtime dir; the
+     * runtime scripts (entry.sh etc.) must exist there as executable
+     * files before the container is started.
+     */
+    fun installVmScripts(context: Context): Result<Unit> = runCatching {
+        val vmDir = File(paths.runtimeDir, "vm")
+        vmDir.mkdirs()
+        copyAsset(context, "runtime/entry.sh", File(vmDir, "entry.sh"), executable = true)
+    }
 
     fun patchZygoteEntry(context: Context, rootfs: File = paths.rootfsDir): Result<Unit> =
         runCatching {

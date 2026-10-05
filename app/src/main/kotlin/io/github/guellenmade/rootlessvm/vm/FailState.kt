@@ -21,9 +21,11 @@ sealed class FailState(val reason: String, val userMessage: String) {
         userMessage = "The rootfs Android version (API $rootfsApi) does not match the built Xposed/Vector artifacts (API $vectorApi). The VM was not started.",
     )
 
-    class ProotBootFailure(exitCode: Int) : FailState(
+    class ProotBootFailure(exitCode: Int, logTail: String = "") : FailState(
         reason = "proot-boot-failure:$exitCode",
-        userMessage = "The container failed to start (proot exited with code $exitCode). The VM was stopped cleanly.",
+        userMessage = "The container failed to start (proot exited with code $exitCode). " +
+            "The VM was stopped cleanly." +
+            if (logTail.isNotBlank()) "\n\n--- proot log (last lines) ---\n$logTail" else "",
     )
 
     class RuntimeArtifactUnavailable(val detail: String, component: String) : FailState(
