@@ -8,7 +8,7 @@
       "abis": [
         "arm64-v8a"
       ],
-      "url": "https://github.com/guellenmade/RootlessAndroidRoot/releases/download/rootfs-aosp-13/rootfs-aosp-13-arm64.tar.xz",
+      "url": "https://github.com/guellenmade/RootlessAndroidRoot/releases/download/rootfs-aosp-13/rootfs-aosp-13-arm64-v8a.tar.xz",
       "sha256": "8adc2e836f698c596afb27bf6fd4ac69daa674bbc42082fb72f0c15b0c999497",
       "sizeBytes": 699185124
     },

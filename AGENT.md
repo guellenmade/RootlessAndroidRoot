@@ -578,3 +578,16 @@ Fixes (honest error propagation, no fabricated states):
 
 Consequence: the original SIGILL hypothesis for the first report is unproven;
 the next device run will show the true failing step and message.
+
+### 27. Wrong rootfs asset URL in catalog (2026-10-05)
+
+The first real on-device error surfaced by the honest error propagation
+(alpha7) was a 404-class download failure for
+`rootfs-aosp-13-arm64.tar.xz`. Cause: the release asset is named
+`rootfs-aosp-13-arm64-v8a.tar.xz` (WD_ARCH name + ABI, per the rootfs build
+pipeline), but catalog.json carried `rootfs-aosp-13-arm64.tar.xz`. The x86_64
+entry was already correct.
+
+Fix: catalog.json arm64 URL now points at `rootfs-aosp-13-arm64-v8a.tar.xz`.
+This closes the chain of masked errors: fabricated -4 -> UnexpectedError ->
+real 404 -> fixed catalog entry.

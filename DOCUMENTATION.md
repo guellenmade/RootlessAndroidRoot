@@ -440,3 +440,10 @@ mismatch, firewall refusal) are listed in the runbook.
   proot boot failure reports its true exit code.
 - If you previously saw "-4": please update, clear app data, run
   "Download everything" again, and report the exact new message if it fails.
+
+## Changelog 2026-10-05 - rootfs download URL fixed (alpha8)
+
+- The arm64 rootfs download failed because the in-app catalog pointed at
+  `rootfs-aosp-13-arm64.tar.xz` while the published release asset is named
+  `rootfs-aosp-13-arm64-v8a.tar.xz`. The catalog now uses the correct URL;
+  checksums were already correct and unchanged.
