@@ -385,3 +385,10 @@ mismatch, firewall refusal) are listed in the runbook.
 - To make the in-app downloads (proot fallback, rootfs, Vector) work over
   the network, the repository must be made public (also required for the
   FOSS / F-Droid goal).
+
+## Changelog 2026-10-05 - repository public
+
+- The repository is now public; release asset downloads work
+  unauthenticated (verified: HTTP 200 for the proot binary and checksum).
+- Both provisioning paths for the proot runtime now work: bundled in the
+  APK (alpha4) and downloaded from releases.

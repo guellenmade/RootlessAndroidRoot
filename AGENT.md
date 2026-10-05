@@ -476,3 +476,12 @@ Known limitation (honest): if the repo stays private, the rootfs image and
 Vector artifact downloads (catalog URLs) will ALSO fail on-device for the
 same reason; bundling or publishing those artifacts publicly remains open
 (catalog sha256s are placeholders).
+
+### 23. Repository made public (2026-10-05)
+
+The maintainer switched the repository to public. Verified anonymously
+(no auth): both `releases/download/proot-arm64-v8a/proot` (606320 bytes)
+and `proot.sha256` return HTTP 200 via the standard redirect chain.
+ADR-009 step 2 (release download + sha256 verify) now works on-device;
+step 1 (bundled assets, v0.1.0-alpha4) works without network. The
+private-repo caveat in section 22 is resolved.
