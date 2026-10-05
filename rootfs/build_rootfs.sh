@@ -25,7 +25,7 @@ esac
 
 # Pinned OTA entries (see AGENT.md ADR-010; update together with sha256s).
 SYSTEM_ZIP_URL="https://sourceforge.net/projects/waydroid/files/images/system/lineage/waydroid_${WD_ARCH}/lineage-20.0-20260927-VANILLA-waydroid_${WD_ARCH}-system.zip/download"
-VENDOR_ZIP_URL="https://sourceforge.net/projects/waydroid/files/images/vendor/waydroid_${WD_ARCH}/mainline/lineage-20.0-20260927-MAINLINE-waydroid_${WD_ARCH}-vendor.zip/download"
+VENDOR_ZIP_URL="https://sourceforge.net/projects/waydroid/files/images/vendor/waydroid_${WD_ARCH}/lineage-20.0-20260927-MAINLINE-waydroid_${WD_ARCH}-vendor.zip/download"
 
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
