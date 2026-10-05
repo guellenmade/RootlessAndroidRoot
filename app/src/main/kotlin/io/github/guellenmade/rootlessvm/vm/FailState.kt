@@ -26,6 +26,13 @@ sealed class FailState(val reason: String, val userMessage: String) {
         userMessage = "The container failed to start (proot exited with code $exitCode). The VM was stopped cleanly.",
     )
 
+    class RuntimeArtifactUnavailable(val detail: String, component: String) : FailState(
+        reason = "runtime-artifact-unavailable:$component",
+        userMessage = "The $component runtime component could not be downloaded (details: $detail). " +
+            "The required artifacts have not been published yet for this build — see the project releases. " +
+            "Nothing was half-installed; you can retry once artifacts are available.",
+    )
+
     class FirewallStartFailure(detail: String) : FailState(
         reason = "firewall-start-failure:$detail",
         userMessage = "The network firewall could not be started ($detail). The VM was not started because firewall mode is on.",

@@ -103,6 +103,13 @@ class MainViewModel(private val locator: ServiceLocator) : ViewModel() {
         if (_ui.value.prepareStep != null) return
         viewModelScope.launch {
             val abi = io.github.guellenmade.rootlessvm.vm.BuildAbi.current()
+            if (!io.github.guellenmade.rootlessvm.vm.BuildAbi.isSupported(abi)) {
+                _ui.value = _ui.value.copy(
+                    prepareStep = null,
+                    failDialog = FailState.UnsupportedAbi(abi),
+                )
+                return@launch
+            }
 
             _ui.value = _ui.value.copy(prepareStep = "Checking device architecture…")
             val catalogText = locator.rootfsCatalog.bundledCatalogText(context.assets)
@@ -120,7 +127,7 @@ class MainViewModel(private val locator: ServiceLocator) : ViewModel() {
             locator.prootProvisioner.provision(context).onFailure {
                 _ui.value = _ui.value.copy(
                     prepareStep = null,
-                    failDialog = FailState.UnsupportedAbi(abi),
+                    failDialog = failFromReason(it.message ?: "unknown"),
                 )
                 return@launch
             }
@@ -233,6 +240,8 @@ class MainViewModel(private val locator: ServiceLocator) : ViewModel() {
 
     private fun failFromReason(reason: String): FailState = when {
         reason.startsWith("unsupported-abi") -> FailState.UnsupportedAbi(reason.substringAfter(':'))
+        reason.startsWith("runtime-artifact-unavailable") ->
+            FailState.RuntimeArtifactUnavailable("download failed", reason.substringAfter(':'))
         reason.startsWith("insufficient-storage") -> FailState.InsufficientStorage(0, 0)
         reason.startsWith("checksum-mismatch") -> FailState.ChecksumMismatch("?", "?")
         reason.startsWith("rootfs-version-incompatible") -> FailState.RootfsVersionIncompatible(0, 0)

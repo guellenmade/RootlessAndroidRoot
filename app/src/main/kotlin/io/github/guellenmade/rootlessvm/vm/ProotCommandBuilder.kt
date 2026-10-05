@@ -47,12 +47,21 @@ class ProotCommandBuilder(private val paths: ContainerPaths) {
 }
 
 object BuildAbi {
-    fun current(): String = System.getProperty("os.arch")?.let { arch ->
-        when {
-            arch.contains("aarch64") || arch.contains("arm64") -> "arm64-v8a"
-            arch.contains("arm") -> "armeabi-v7a"
-            arch.contains("x86_64") || arch.contains("amd64") -> "x86_64"
+    /**
+     * Primary device ABI from Android's own ABI list (Build.SUPPORTED_ABIS),
+     * not the JVM's os.arch (which can diverge on emulators/some devices).
+     */
+    fun current(): String {
+        val supported = android.os.Build.SUPPORTED_ABIS?.firstOrNull() ?: return "unknown"
+        return when {
+            supported.startsWith("arm64") -> "arm64-v8a"
+            supported.startsWith("armeabi") || supported.startsWith("arm") -> "armeabi-v7a"
+            supported.startsWith("x86_64") -> "x86_64"
+            supported.startsWith("x86") -> "x86"
             else -> "unknown"
         }
-    } ?: "unknown"
+    }
+
+    fun isSupported(abi: String): Boolean =
+        abi == "arm64-v8a" || abi == "armeabi-v7a" || abi == "x86_64"
 }

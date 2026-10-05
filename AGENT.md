@@ -380,3 +380,17 @@ published (§9).
   it; keystore is stored as a repo secret, never committed).
 - v0.1.0-alpha2 published with a signed APK; the broken unsigned asset on
   v0.1.0-alpha was deleted and its notes point to alpha2.
+
+### 19. ABI false-positive fix (v0.1.0-alpha3)
+- Bug report: arm64-v8a device got "architecture not supported" during
+  Download-everything. Real cause: the proot binary download failed
+  (placeholder release URL, artifacts not published) and the ViewModel
+  mapped ANY provisioning failure to UnsupportedAbi.
+- Fixes:
+  1. BuildAbi.current() now uses Build.SUPPORTED_ABIS (Android truth), not
+         JVM os.arch; explicit isSupported() check runs before the catalog
+     lookup, so UnsupportedAbi can only mean a genuinely unsupported ABI.
+  2. New fail state RuntimeArtifactUnavailable with the real cause; proot
+     provisioning failures map to it, not to UnsupportedAbi.
+  3. ProotProvisioner reuses an already-provisioned binary (idempotent) and
+     keeps its failure reason intact end-to-end.

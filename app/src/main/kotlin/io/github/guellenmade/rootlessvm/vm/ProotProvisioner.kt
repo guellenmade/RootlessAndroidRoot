@@ -22,6 +22,10 @@ class ProotProvisioner(private val paths: ContainerPaths) {
             return Result.failure(IllegalStateException(FailState.UnsupportedAbi(abi).reason))
         }
         val target = File(paths.runtimeDir, "bin/proot")
+        if (target.exists() && target.length() > 0 && target.canExecute()) {
+            return Result.success(target)
+        }
+        val target = File(paths.runtimeDir, "bin/proot")
         target.parentFile?.mkdirs()
         paths.ensure()
 
@@ -38,6 +42,11 @@ class ProotProvisioner(private val paths: ContainerPaths) {
 
         val remote = RELEASE_URL.format(abi)
         return downloadVerified(remote, target, "$remote.sha256")
+            .recoverCatching { e ->
+                throw IllegalStateException(
+                    FailState.RuntimeArtifactUnavailable(e.message ?: "download failed", "proot ($abi)").reason,
+                )
+            }
     }
 
     private fun downloadVerified(url: String, target: File, shaUrl: String): Result<File> =
