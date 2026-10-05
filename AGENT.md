@@ -612,3 +612,19 @@ Fixes:
 - Rule going forward: published artifact releases are immutable; to ship new
   artifacts, publish a NEW release tag and update the catalog in the same
   commit.
+
+### 29. Unpack failure 127: Android toybox tar cannot decompress xz (2026-10-05)
+
+The next real on-device error (alpha9) was `unpack-failure:127` after the
+rootfs download and checksum both passed. Cause: RootfsInstaller.unpack()
+shelled out to `tar -xJf`, but Android's toybox tar has no xz decompressor
+(exit 127, command not found). The rootfs tarball is tar.xz, so unpacking
+could never work on-device.
+
+Fix (ADR-012): replace the tar subprocess with a pure-Java streaming
+extractor in RootfsInstaller using Apache Commons Compress (TarArchiveStream)
++ xz-java (XZFileInputStream), both FOSS and F-Droid-safe. Handles
+directories, regular files (executable bit from tar mode), hard links
+(copy of the root-relative link target) and symlinks (relative linkName).
+R8 keep rules added for both libraries since release builds are minified.
+This also makes unpacking deterministic regardless of host toybox variant.

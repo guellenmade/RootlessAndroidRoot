@@ -8,6 +8,8 @@ composeBom = "2026.01.00"
 coreKtx = "1.17.0"
 lifecycle = "2.9.4"
 coroutines = "1.10.2"
+commonsCompress = "1.27.1"
+xzJava = "1.10"
 
 [libraries]
 junit = { module = "junit:junit", version = "4.13.2" }
@@ -22,6 +24,8 @@ androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling
 androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
+xz-java = { module = "org.tukaani:xz", version.ref = "xzJava" }
 
 [plugins]
 kotlin-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

@@ -457,3 +457,11 @@ mismatch, firewall refusal) are listed in the runbook.
   sha256 values (recomputed from the downloaded assets).
 - The artifact publish jobs now skip if the release already exists, so
   checksums cannot silently drift again.
+
+## Changelog 2026-10-05 - rootfs unpack fixed (alpha10)
+
+- After the download and checksum succeeded, unpacking failed with exit 127:
+  the app was calling the host `tar -xJf`, but Android's built-in tar cannot
+  decompress xz archives. The rootfs is now extracted entirely in-app with
+  Apache Commons Compress and xz-java (FOSS libraries), handling files,
+  directories, permissions, hard links and symlinks.

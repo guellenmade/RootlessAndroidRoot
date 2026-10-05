@@ -4,6 +4,9 @@ import io.github.guellenmade.rootlessvm.vm.ContainerPaths
 import io.github.guellenmade.rootlessvm.vm.FailState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.tukaani.xz.XZFileInputStream
 import java.io.File
 import java.security.MessageDigest
 
@@ -82,12 +85,34 @@ class RootfsInstaller(
 
     private fun unpack(archive: File, dest: File) {
         dest.mkdirs()
-        ProcessBuilder(
-            "tar", "-xJf", archive.absolutePath, "-C", dest.absolutePath,
-        ).apply {
-            redirectErrorStream(true)
-        }.start().waitFor().let { rc ->
-            if (rc != 0) error("unpack-failure:$rc")
+        XZFileInputStream(archive.inputStream().buffered(1 shl 16)).use { xzIn ->
+            TarArchiveInputStream(xzIn).use { tarIn ->
+                var entry: TarArchiveEntry?
+                while (tarIn.nextTarEntry.also { entry = it } != null) {
+                    val e = entry ?: break
+                    val out = File(dest, e.name)
+                    if (e.isDirectory) {
+                        out.mkdirs()
+                    } else {
+                        out.parentFile?.mkdirs()
+                        if (e.isLink) {
+                            val target = File(dest, e.linkName)
+                            out.delete()
+                            target.copyTo(out, overwrite = true)
+                            if (target.canExecute()) out.setExecutable(true)
+                        } else if (e.isSymbolicLink) {
+                            out.delete()
+                            java.nio.file.Files.createSymbolicLink(
+                                out.toPath(),
+                                java.nio.file.Path.of(e.linkName),
+                            )
+                        } else {
+                            out.outputStream().use { tarIn.copyTo(it) }
+                            if (e.mode and 0x100 != 0) out.setExecutable(true)
+                        }
+                    }
+                }
+            }
         }
     }
 
