@@ -125,7 +125,7 @@ class VectorProvisioner(private val paths: ContainerPaths) {
         val actual = digest.digest().joinToString("") { "%02x".format(it) }
         if (!actual.equals(artifact.sha256, true)) {
             tmp.delete()
-            throw IllegalStateException(FailState.ChecksumMismatch(artifact.sha256, actual).reason)
+            throw IllegalStateException(FailState.ChecksumMismatch(artifact.sha256, actual).reason + ":" + artifact.component)
         }
         tmp.renameTo(target)
         return target

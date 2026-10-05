@@ -645,3 +645,27 @@ b13721c01caa967c8b14dc713624e46e3cb36a127f400b445b50b33fd2f88978
 (694699424 bytes). Vector assets verified unchanged (14:50, same sizes and
 checksums as catalog). No further clobbering is possible: post-guard runs
 skip when the release exists.
+
+### 31. Vector artifact checksum drift + misleading dialog (2026-10-05)
+
+The post-unpack "checksum verification" failure was NOT the rootfs: the
+rootfs is verified before unpack, and unpack succeeded. The failing step was
+VectorProvisioner.downloadVerified for vector-manager.apk, which throws the
+same checksum-mismatch reason — and the dialog printed "Rootfs image failed
+checksum verification" unconditionally, sending diagnosis down the wrong
+path.
+
+Root cause of the mismatch itself: vector.yml's 14:41 run (started BEFORE
+the sec-28 guard landed) rebuilt and clobbered the vector assets at 14:50,
+AFTER the catalog pinned checksums computed at 14:40. Same race as sec 30.
+Current final values (verified against live assets): vector-manager.apk
+b27b81a8..., libvector_inject.so 7def7b8b... and xposed.dex fc5ae6b4...
+(unchanged). Post-guard runs (15:03, 16:53) skipped publishing, so no
+further drift is possible.
+
+Fixes:
+- catalog: vector-manager.apk sha256 repinned to b27b81a8...
+- VectorProvisioner appends the component name to the checksum-mismatch
+  reason; MainViewModel parses expected/actual back out.
+- FailState.ChecksumMismatch now names the expected vs actual hashes and no
+  longer claims it is always the "Rootfs image".

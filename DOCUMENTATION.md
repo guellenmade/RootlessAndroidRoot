@@ -474,3 +474,14 @@ mismatch, firewall refusal) are listed in the runbook.
   old clobber logic; subsequent runs skip publishing when the release
   exists. The catalog now pins the checksums of the assets that are
   currently published and stable.
+
+## Changelog 2026-10-05 - Vector checksum repin + honest checksum dialog (alpha12)
+
+- The "checksum verification" failure after rootfs unpacking was actually the
+  Vector manager APK: an in-flight CI run (started before the release-
+  immutability guard) replaced the Vector release assets once more, after the
+  catalog had pinned their checksums. The catalog now carries the final,
+  verified checksums; with all pre-guard runs finished, the assets cannot
+  change again.
+- The checksum-failure dialog now states which component failed and shows the
+  expected vs actual hash, instead of always blaming the rootfs image.

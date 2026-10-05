@@ -243,7 +243,12 @@ class MainViewModel(private val locator: ServiceLocator) : ViewModel() {
         reason.startsWith("runtime-artifact-unavailable") ->
             FailState.RuntimeArtifactUnavailable("download failed", reason.substringAfter(':'))
         reason.startsWith("insufficient-storage") -> FailState.InsufficientStorage(0, 0)
-        reason.startsWith("checksum-mismatch") -> FailState.ChecksumMismatch("?", "?")
+        reason.startsWith("checksum-mismatch") -> {
+            val payload = reason.removePrefix("checksum-mismatch:")
+            val parts = payload.split(':', limit = 2)
+            if (parts.size == 2) FailState.ChecksumMismatch(parts[1], parts[0])
+            else FailState.ChecksumMismatch(payload, "")
+        }
         reason.startsWith("rootfs-version-incompatible") -> FailState.RootfsVersionIncompatible(0, 0)
         reason.startsWith("firewall-start-failure") -> FailState.FirewallStartFailure(reason.substringAfter(':'))
         reason.startsWith("proot-boot-failure") ->

@@ -13,7 +13,9 @@ sealed class FailState(val reason: String, val userMessage: String) {
 
     class ChecksumMismatch(expected: String, actual: String) : FailState(
         reason = "checksum-mismatch:$expected/$actual",
-        userMessage = "Rootfs image failed checksum verification. The download was corrupted or tampered with; it has been deleted. Please retry.",
+        userMessage = "A downloaded component failed checksum verification " +
+            "(expected $expected, got $actual). The download was corrupted or the published " +
+            "artifact changed; it has been deleted. Please retry or report this message.",
     )
 
     class RootfsVersionIncompatible(rootfsApi: Int, vectorApi: Int) : FailState(
