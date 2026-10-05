@@ -352,3 +352,6 @@ mismatch, firewall refusal) are listed in the runbook.
 - **v0.1.0-alpha:** first release published via CI (unsigned APK attached);
   catalog artifacts remain placeholders — download flow aborts cleanly at
   checksum until real artifacts are published.
+- **v0.1.0-alpha2:** signing fix — release APKs are always signed
+  (debug-signing fallback when no release keystore is configured); broken
+  unsigned asset removed from v0.1.0-alpha.

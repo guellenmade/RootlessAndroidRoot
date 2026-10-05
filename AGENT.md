@@ -369,3 +369,14 @@ published (§9).
   the download flow aborts cleanly at checksum verification until real
   rootfs/proot/Vector artifacts are published (§9).
 - APK is unsigned; signing setup (F-Droid or maintainer key) is an open task.
+
+### 18. Signing fix (v0.1.0-alpha2)
+- Bug: v0.1.0-alpha shipped an unsigned APK -> Android install failed with
+  INSTALL_PARSE_FAILED_NO_CERTIFICATE.
+- Fix: release buildType now falls back to the debug signing config when no
+  release keystore is configured, so published APKs are ALWAYS installable.
+  When SIGNING_KEYSTORE_BASE64 + SIGNING_STORE_PASSWORD secrets are set, the
+  pipeline signs with the real keystore instead (generate-keystore.yml creates
+  it; keystore is stored as a repo secret, never committed).
+- v0.1.0-alpha2 published with a signed APK; the broken unsigned asset on
+  v0.1.0-alpha was deleted and its notes point to alpha2.
