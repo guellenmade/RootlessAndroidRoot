@@ -1,5 +1,4 @@
 package io.github.guellenmade.rootlessvm.di
-package io.github.guellenmade.rootlessvm.di
 
 import android.content.Context
 import io.github.guellenmade.rootlessvm.data.ContainerAppStore

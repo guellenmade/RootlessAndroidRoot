@@ -5,6 +5,7 @@ import io.github.guellenmade.rootlessvm.di.ServiceLocator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.net.URI
 import java.security.MessageDigest
 
 /**

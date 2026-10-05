@@ -13,7 +13,7 @@ import java.net.URI
  * host ABIs to rootfs images with SHA-256 checksums; the installer refuses
  * anything that does not match.
  */
-class RootfsCatalog(paths: io.github.guellenmade.rootlessvm.vm.ContainerPaths) {
+class RootfsCatalog(private val paths: io.github.guellenmade.rootlessvm.vm.ContainerPaths) {
     private val json = Json { ignoreUnknownKeys = true }
 
     fun catalogFile(): File = File(paths.base, "rootfs-catalog.json")
