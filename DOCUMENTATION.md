@@ -392,3 +392,25 @@ mismatch, firewall refusal) are listed in the runbook.
   unauthenticated (verified: HTTP 200 for the proot binary and checksum).
 - Both provisioning paths for the proot runtime now work: bundled in the
   APK (alpha4) and downloaded from releases.
+
+## Changelog 2026-10-05 - real rootfs & Vector artifacts published
+
+- Rootfs: Android 13 (LineageOS 20.0, API 33) images for arm64-v8a and
+  x86_64 built from the official Waydroid OTA sources (FOSS, no Google
+  apps) and published as release `rootfs-aosp-13` (~700 MB per ABI,
+  sha256-verified).
+- Why not a Google GSI? Google's GSI license forbids redistribution;
+  the AOSP emulator images use dynamic partitions we cannot extract
+  without proprietary tooling. The Waydroid images are GPL/Apache
+  licensed, reproducible from public OTA channels, and ship as plain
+  ext4/erofs images.
+- Vector (Xposed framework) artifacts built from the pinned upstream
+  commit and published as release `vector-aosp-13`: the injection
+  library, the framework dex, the manager UI APK, and the daemon APK.
+- The in-app "Download everything" chain now has real artifacts for
+  every step: proot (bundled + releases), rootfs, Vector. All
+  downloads are SHA-256 verified.
+- Honest status: the Vector artifacts are upstream's Zygisk build
+  repurposed for our app_process injection path; on-device validation
+  of the Xposed hook chain inside the container is still pending
+  (requires a physical device, see docs/local-testing/phase6_runbook.md).

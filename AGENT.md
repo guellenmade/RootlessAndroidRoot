@@ -485,3 +485,53 @@ and `proot.sha256` return HTTP 200 via the standard redirect chain.
 ADR-009 step 2 (release download + sha256 verify) now works on-device;
 step 1 (bundled assets, v0.1.0-alpha4) works without network. The
 private-repo caveat in section 22 is resolved.
+
+### 24. Real artifacts: rootfs + Vector published (2026-10-05)
+
+The download-everything chain now has real, published, checksum-verified
+artifacts for every step. Root causes found on the way (each verified in
+the failed run's log):
+
+Rootfs (ADR-010):
+- Rejected Google GSI zips: their license forbids redistribution.
+- Rejected AOSP emulator system images (Apache-2.0): the API-33
+  system.img is a GPT disk image with a dynamic-partition `super`
+  (liblp) — userspace extraction would need lpunpack; not viable here.
+- Chosen: official Waydroid OTA LineageOS 20.0 VANILLA images
+  (Android 13 / API 33, GPL+Apache, no GMS, redistribution OK).
+  system.img and vendor.img are standalone ext4/erofs images; extracted
+  userspace-only (python unsparse + debugfs rdump / fsck.erofs).
+  Pinned builds: lineage-20.0-20260927 (system+vendor, arm64 and x86_64).
+  System image is system-as-root: extracted system image IS the
+  container root; vendor merged under /vendor.
+- Fixes made: sdkmanager path is system-images/android-33/ (hyphenated);
+  vendor OTA URL has no "mainline/" segment; dead debugfs before erofs
+  branch etc. Release `rootfs-aosp-13` holds
+  rootfs-aosp-13-{arm64-v8a,x86_64}.tar.xz (~700 MB each) + .sha256.
+
+Vector (ADR-011):
+- Upstream at pinned commit ddeed8c is Zygisk-first: there is no
+  standalone "liblspd.so"/"xposed.dex" pair; upstream packages via
+  `./gradlew zipAll` into Vector-v*-Release.zip containing
+  lib/<abi>/libzygisk.so, framework/vector.dex, manager.apk,
+  daemon.apk, bin/dex2oat, bin/liboat_hook.so.
+- build_vector.sh now builds via upstream's own zipAll and maps:
+  libvector_inject.so <- lib/arm64-v8a/libzygisk.so;
+  xposed.dex <- framework/vector.dex; vector-manager.apk <- manager.apk
+  (plus vector-daemon.apk kept in the release).
+- Build fixes: JDK 21 (source release 21), SDK-bundled ninja 1.10
+  replaced with pip ninja 1.13 (CMake C++20 module scan requires 1.11+),
+  upstream default branch is master (fetch pinned commit directly),
+  workdir mkdir before cd. Release `vector-aosp-13` holds all artifacts.
+- Honest note: zygisk-entry artifacts repurposed for app_process
+  injection (ADR-005) is UNVALIDATED on-device. The libzygisk.so entry
+  point expects a Zygisk loader; whether it initializes under our
+  LD_PRELOAD app_process wrapper in the container is the next
+  on-device test (Phase 6 runbook). The manager.apk/daemon.apk are
+  plain APKs and install normally in the container.
+
+catalog.json now carries the real sha256s and sizes for all entries
+(rootfs from the release .sha256 assets, vector computed locally from the
+downloaded release assets). No zero-checksum placeholders remain.
+Remaining open: on-device end-to-end validation (Phase 6), AVF fast path,
+rootfs Android version pin vs Vector API target drift automation.
