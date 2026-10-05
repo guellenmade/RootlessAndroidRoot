@@ -1,46 +1,58 @@
 #!/usr/bin/env bash
-# Builds an Android rootfs tarball for one ABI from the Apache-2.0 AOSP
-# emulator system image (pure AOSP, no GMS; redistributable).
+# Builds an Android 13 (LineageOS 20 / API 33) rootfs tarball for one ABI
+# from the official Waydroid OTA images (GPL/Apache LineageOS-based, VANILLA
+# = no GMS; redistribution allowed).
 # Usage: build_rootfs.sh <workdir> <abi>   (abi: arm64-v8a | x86_64)
 #
-# Source: sdkmanager "system-images;android-33;default;<abi>"
-# Extraction is done with userspace tools only (no root, no loop mounts):
-#   - sparse images are unsparsed first (python fallback if simg2img absent)
-#   - ext4:  debugfs rdump (e2fsprogs)
-#   - erofs: fsck.erofs --extract (erofs-utils)
+# Sources (pinned; verified via the waydroid/OTA manifests):
+#   system: lineage-20.0-20260927-VANILLA-waydroid_<arch>-system.zip
+#   vendor: MAINLINE vendor image from the same OTA channel
+# Extraction is userspace-only (no root, no loop mounts):
+#   sparse -> unsparsed; ext4 -> debugfs rdump; erofs -> fsck.erofs --extract
 set -euo pipefail
 
 WORKDIR="${1:?usage: build_rootfs.sh <workdir> <abi>}"
 ABI="${2:?usage: build_rootfs.sh <workdir> <abi>}"
-API="33"
 
 case "${ABI}" in
-arm64-v8a|x86_64) ;;
+arm64-v8a) WD_ARCH="arm64" ;;
+x86_64) WD_ARCH="x86_64" ;;
 *)
-    echo "unsupported ABI for rootfs images: ${ABI} (emulator images exist for arm64-v8a/x86_64 only)" >&2
+    echo "unsupported ABI for rootfs images: ${ABI}" >&2
     exit 1
     ;;
 esac
 
+# Pinned OTA entries (see AGENT.md ADR-010; update together with sha256s).
+SYSTEM_ZIP_URL="https://sourceforge.net/projects/waydroid/files/images/system/lineage/waydroid_${WD_ARCH}/lineage-20.0-20260927-VANILLA-waydroid_${WD_ARCH}-system.zip/download"
+VENDOR_ZIP_URL="https://sourceforge.net/projects/waydroid/files/images/vendor/waydroid_${WD_ARCH}/mainline/lineage-20.0-20260927-MAINLINE-waydroid_${WD_ARCH}-vendor.zip/download"
+
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
 
-SDKMGR="${ANDROID_HOME:?ANDROID_HOME must be set}/cmdline-tools/latest/bin/sdkmanager"
-IMGDIR="${ANDROID_HOME}/system-images/android-${API}/default/${ABI}"
+fetch() {
+    # SourceForge /download URLs redirect to a mirror; -L follows.
+    curl -fL --retry 5 --retry-delay 10 -o "$2" "$1"
+}
 
-if [ ! -f "${IMGDIR}/system.img" ]; then
-    yes | "${SDKMGR}" --licenses >/dev/null 2>&1 || true
-    "${SDKMGR}" --verbose "system-images;android-${API};default;${ABI}"
-    ls -la "${ANDROID_HOME}/system-images/android-${API}/default/" || true
+# ---- 1) download + unzip ----
+if [ ! -f system.img ]; then
+    fetch "${SYSTEM_ZIP_URL}" system.zip
+    unzip -o system.zip
 fi
+if [ ! -f vendor.img ]; then
+    fetch "${VENDOR_ZIP_URL}" vendor.zip
+    unzip -o vendor.zip 'images/*' 2>/dev/null || unzip -o vendor.zip
+    # vendor zips sometimes nest under images/
+    [ -f vendor.img ] || [ -f images/vendor.img ] && mv -v images/vendor.img vendor.img 2>/dev/null || true
+fi
+[ -f system.img ] || { echo "system.img missing after unzip" >&2; exit 1; }
+[ -f vendor.img ] || { echo "vendor.img missing after unzip" >&2; exit 1; }
 
-SYSTEM_IMG="${IMGDIR}/system.img"
-[ -f "${SYSTEM_IMG}" ] || { echo "system.img not found after sdkmanager install" >&2; exit 1; }
-echo "source image:"; ls -la "${IMGDIR}"
-
-# ---- 1) unsparse if needed ----
-RAW="${WORKDIR}/system-raw.img"
-python3 - "${SYSTEM_IMG}" "${RAW}" <<'PYEOF'
+# ---- 2) unsparse if needed (pure-python, no host tools) ----
+unsparse() {
+    local src="$1" dst="$2"
+    python3 - "${src}" "${dst}" <<'PYEOF'
 import sys, struct
 src, dst = sys.argv[1], sys.argv[2]
 with open(src, "rb") as f:
@@ -54,9 +66,8 @@ with open(src, "rb") as f:
                     break
                 o.write(chunk)
         sys.exit(0)
-    # android sparse image
     hdr = f.read(28)
-    _, _, file_sz, _, blk_sz = struct.unpack("<IHHHQI", magic + hdr[:18])
+    _, _, _, _, blk_sz = struct.unpack("<IHHHQI", magic + hdr[:18])
     with open(dst, "wb") as o:
         while True:
             ch = f.read(12)
@@ -64,67 +75,78 @@ with open(src, "rb") as f:
                 break
             ctype, cnum, clen = struct.unpack("<HHI", ch)
             data = f.read(clen)
-            if ctype == 0xCAC1:  # raw
+            if ctype == 0xCAC1:
                 for _ in range(cnum):
                     o.write(data[:blk_sz])
                     data = data[blk_sz:]
-            elif ctype == 0xCAC2:  # fill
+            elif ctype == 0xCAC2:
                 fill = data[:4] * blk_sz
                 for _ in range(cnum):
                     o.write(fill)
-            elif ctype == 0xCAC3:  # don't care
+            elif ctype == 0xCAC3:
                 o.write(b"\x00" * (cnum * blk_sz))
-            # 0xCAC4 (crc) skipped
-print("unsparsed ok", file=sys.stderr)
 PYEOF
+}
 
-# ---- 2) detect filesystem and extract ----
-ROOTFS="${WORKDIR}/rootfs"
-rm -rf "${ROOTFS}"
-mkdir -p "${ROOTFS}"
-
-FS_TYPE="$(python3 - "${RAW}" <<'PYEOF'
+fs_type() {
+    python3 - "$1" <<'PYEOF'
 import sys
 with open(sys.argv[1], "rb") as f:
     f.seek(1024)
     sb = f.read(64)
     if sb[56:58] == b"\x53\xef":
-        print("ext4")
-        sys.exit(0)
+        print("ext4"); sys.exit(0)
     if sb[0:4] == b"\xe0\xf5\xe1\xe2":
-        print("erofs")
-        sys.exit(0)
+        print("erofs"); sys.exit(0)
 print("unknown")
 PYEOF
-)"
-echo "filesystem type: ${FS_TYPE}"
+}
 
-case "${FS_TYPE}" in
-ext4)
-    debugfs -R "rdump / ${ROOTFS}" "${RAW}" 2>"${WORKDIR}/debugfs.log" || {
-        echo "debugfs rdump failed:" >&2
-        tail -20 "${WORKDIR}/debugfs.log" >&2
+extract() {
+    local img="$1" out="$2"
+    rm -rf "${out}"
+    mkdir -p "${out}"
+    case "$(fs_type "${img}")" in
+    ext4)
+        debugfs -R "rdump / ${out}" "${img}" 2>"${out}.debugfs.log" || {
+            echo "debugfs rdump failed for ${img}:" >&2
+            tail -20 "${out}.debugfs.log" >&2
+            exit 1
+        }
+        ;;
+    erofs)
+        fsck.erofs --extract="${out}" "${img}"
+        ;;
+    *)
+        echo "unrecognized image format: ${img}" >&2
         exit 1
-    }
-    ;;
-erofs)
-    command -v fsck.erofs >/dev/null || {
-        sudo apt-get update -qq
-        sudo apt-get install -y -qq erofs-utils
-    }
-    fsck.erofs --extract="${ROOTFS}" "${RAW}"
-    ;;
-*)
-    echo "unrecognized image format; cannot extract without root" >&2
-    exit 1
-    ;;
-esac
+        ;;
+    esac
+}
 
-# The tarball root must contain /system (start_container.sh runs
-# /system/bin/sh; entry.sh needs /system/bin/app_process64).
-[ -d "${ROOTFS}/system/bin" ] || { echo "extraction did not produce /system/bin" >&2; exit 1; }
+unsparse system.img system-raw.img
+mv system-raw.img system.img
+unsparse vendor.img vendor-raw.img
+mv vendor-raw.img vendor.img
 
-# ---- 3) package ----
+# ---- 3) extract into one rootfs ----
+extract system.img "${WORKDIR}/rootfs-system"
+extract vendor.img "${WORKDIR}/rootfs-vendor"
+
+ROOTFS="${WORKDIR}/rootfs"
+rm -rf "${ROOTFS}"
+mkdir -p "${ROOTFS}"
+# system-as-root: the system image is the container root (/), and /system
+# is a symlink to '.' inside it. Merge vendor under /vendor.
+cp -a "${WORKDIR}/rootfs-system/." "${ROOTFS}/"
+rm -rf "${ROOTFS}/vendor" 2>/dev/null || true
+cp -a "${WORKDIR}/rootfs-vendor/." "${ROOTFS}/vendor/"
+
+# Sanity: the container runtime needs these paths.
+[ -e "${ROOTFS}/system/bin/sh" ] || [ -e "${ROOTFS}/bin/sh" ] || { echo "no /system/bin/sh in rootfs" >&2; exit 1; }
+[ -e "${ROOTFS}/system/bin/app_process64" ] || [ -e "${ROOTFS}/bin/app_process64" ] || { echo "no app_process64 in rootfs" >&2; exit 1; }
+
+# ---- 4) package ----
 OUT="${WORKDIR}/out"
 mkdir -p "${OUT}"
 TARBALL="${OUT}/rootfs-aosp-13-${ABI}.tar.xz"
