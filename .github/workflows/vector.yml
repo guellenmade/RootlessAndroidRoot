@@ -6,6 +6,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 env:
   ANDROID_HOME: /usr/local/lib/android/sdk
 
@@ -56,3 +59,25 @@ jobs:
             vector-work/out/**
             proot-work/out/**
           if-no-files-found: warn
+
+  publish:
+    needs: vector
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: vector-artifacts
+          path: dist
+      - name: Publish vector release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -R dist | head -40
+          gh release create "vector-aosp-13" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Vector artifacts (API 33)" \
+            --notes "Vector (Xposed framework) injection artifacts built from pinned commit ddeed8c (v2.2 lineage) for Android 13 / API 33: libvector_inject.so, xposed.dex, vector-manager.apk, vector-daemon.apk." \
+            dist/out/libvector_inject.so dist/out/xposed.dex dist/out/vector-manager.apk dist/out/vector-daemon.apk \
+            || gh release upload "vector-aosp-13" dist/out/libvector_inject.so dist/out/xposed.dex dist/out/vector-manager.apk dist/out/vector-daemon.apk --clobber --repo "$GITHUB_REPOSITORY"
