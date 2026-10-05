@@ -347,3 +347,17 @@ always comes from a verifiable source, and never leaves the app half-working.
   tracked in §9): an actual AOSP/LineageOS-derived rootfs image + real SHA-256
   in the catalog; proot binaries attached to a `proot-<abi>` release; Vector
   artifacts built against that exact rootfs; on-device Phase 6 validation.
+
+### 16. "Download everything" button (2026-10-05)
+**Decision:** one first-launch button downloads and installs the full stack:
+proot (ADR-009 chain) -> rootfs (SHA-256 verified, ADR-008 catalog) ->
+Vector artifacts (new VectorProvisioner: downloads libvector_inject.so,
+xposed.dex, vector-manager.apk from the catalog, verifies each SHA-256,
+deploys into the rootfs incl. the zygote app_process patch, su tools, and
+vector-manifest.json).
+**Rationale:** the goal asks for a working first-launch download of the whole
+environment; three separate manual steps violate "no half-working states" —
+the button either ends fully provisioned or fails cleanly with a dialog.
+Catalog now carries a `vector` artifact list (component/commit/apiLevel/url/
+sha256); SHA-256 fields remain placeholders until real artifacts are
+published (§9).

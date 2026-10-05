@@ -345,3 +345,7 @@ mismatch, firewall refusal) are listed in the runbook.
   tap/back input injection and measured fps, rewritten deny-all firewall pump.
   Rootfs catalog asset added; SHA-256 fields are placeholders until the first
   rootfs image is built and published (see AGENT.md §9 open tasks).
+- **Download-everything button:** first launch now has a single button that
+  provisions proot, downloads + verifies + unpacks the rootfs, and downloads +
+  deploys the Vector (Xposed) artifacts into the rootfs, with live step
+  progress and clean-abort fail dialogs.
