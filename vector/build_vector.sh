@@ -30,13 +30,26 @@ export VECTOR_TARGET_API="${API}"
 # Vector native sources do not use C++20 modules, so disable the scan.
 export CMAKE_CXX_SCAN_FOR_MODULES=OFF
 
-./gradlew :daemon:assembleRelease
+# Build via upstream's own packaging task (zygisk/build.gradle.kts zipAll):
+# it produces Vector-v*-Release.zip with the complete component set:
+#   lib/<abi>/libzygisk.so, framework/vector.dex, manager.apk, daemon.apk,
+#   bin/dex2oat, bin/liboat_hook.so, module.prop
+# Map to the artifact names the container deploy step expects (ADR-005):
+#   libvector_inject.so <- lib/arm64-v8a/libzygisk.so
+#   xposed.dex          <- framework/vector.dex
+#   vector-manager.apk  <- manager.apk
+./gradlew zipAll
 mkdir -p "${WORKDIR}/out"
-# Vector's release assemble produces the injectable native payload and the
-# framework dex; exact output paths follow the upstream layout.
-find daemon/build -name 'liblspd.so' -exec cp {} "${WORKDIR}/out/libvector_inject.so" \;
-find . -name 'xposed.dex' -exec cp {} "${WORKDIR}/out/xposed.dex" \;
-find manager/build/outputs/apk/release -name '*.apk' -exec cp {} "${WORKDIR}/out/vector-manager.apk" \;
+ZIP="$(ls zygisk/release/Vector-v*-Release.zip | head -1)"
+[ -n "${ZIP}" ] || { echo "zipAll did not produce a release zip" >&2; exit 1; }
+unzip -o "${ZIP}" -d "${WORKDIR}/module-unpack"
+cp "${WORKDIR}/module-unpack/lib/arm64-v8a/libzygisk.so" "${WORKDIR}/out/libvector_inject.so"
+cp "${WORKDIR}/module-unpack/framework/vector.dex" "${WORKDIR}/out/xposed.dex"
+cp "${WORKDIR}/module-unpack/manager.apk" "${WORKDIR}/out/vector-manager.apk"
+cp "${WORKDIR}/module-unpack/daemon.apk" "${WORKDIR}/out/vector-daemon.apk" || true
+mkdir -p "${WORKDIR}/out/bin"
+cp "${WORKDIR}/module-unpack/bin/dex2oat" "${WORKDIR}/out/bin/dex2oat" || true
+cp "${WORKDIR}/module-unpack/bin/liboat_hook.so" "${WORKDIR}/out/bin/liboat_hook.so" || true
 
 {
     echo '{'
