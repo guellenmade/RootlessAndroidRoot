@@ -53,9 +53,10 @@ fi
     git checkout "${PINNED_COMMIT}"
     git submodule update --init --recursive
     make -C src clean >/dev/null 2>&1 || true
-    make -C src -j"$(nproc)" V=1 WITHOUT_PYTHON=1 \
-        LDFLAGS="-L${WORKDIR}/talloc-install/lib" \
-        CPPFLAGS="-I${WORKDIR}/talloc-install/include"
+    # Note: do NOT override CPPFLAGS/LDFLAGS on the command line — that would
+    # replace proot's own default include paths and break internal headers.
+    # talloc flags are picked up via pkg-config (PKG_CONFIG_PATH is exported).
+    make -C src -j"$(nproc)" V=1 WITHOUT_PYTHON=1
 )
 
 mkdir -p "${WORKDIR}/out/${ABI}"
