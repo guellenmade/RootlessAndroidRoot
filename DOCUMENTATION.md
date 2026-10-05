@@ -414,3 +414,16 @@ mismatch, firewall refusal) are listed in the runbook.
   repurposed for our app_process injection path; on-device validation
   of the Xposed hook chain inside the container is still pending
   (requires a physical device, see docs/local-testing/phase6_runbook.md).
+
+## Changelog 2026-10-05 - container start fix (alpha6 candidate)
+
+- Fixed container launch: proot now bind-mounts the runtime directory at
+  `/vm` inside the container, and the `entry.sh` bootstrap script is deployed
+  there during provisioning (previously the launch path referenced a file
+  that was never placed, and no `/vm` bind existed).
+- proot's output is no longer discarded: on a failed start, the error dialog
+  now includes the last lines of `proot-boot.log`, which pinpoints the actual
+  failure (e.g. architecture mismatch vs. launch arguments).
+- Known issue under investigation: a reported `proot exited with code -4`
+  (SIGILL). The fixes above address two launch-path bugs; if the error
+  persists on your device, please send the log text shown in the dialog.

@@ -535,3 +535,27 @@ catalog.json now carries the real sha256s and sizes for all entries
 downloaded release assets). No zero-checksum placeholders remain.
 Remaining open: on-device end-to-end validation (Phase 6), AVF fast path,
 rootfs Android version pin vs Vector API target drift automation.
+
+### 25. Container start fix: /vm bind, entry.sh deploy, boot-log capture (2026-10-05)
+
+On-device "download everything" ended with `proot exited with code -4`
+(SIGILL). Two concrete launch-path bugs were found and fixed (commit 890b508):
+
+1. **`/vm` was never bind-mounted.** ProotCommandBuilder asked proot to run
+   `/system/bin/sh /vm/entry.sh`, but no `-b ...:/vm` bind existed and
+   entry.sh was never deployed (only su/policy_check.sh/app_process_wrapper.sh
+   were). Fix: both build() and execCommand() now pass
+   `-b <runtimeDir>:/vm`, and VectorProvisioner.installSuTools additionally
+   copies the `runtime/entry.sh` asset to `<runtimeDir>/vm/entry.sh`
+   (executable) via the new installVmScripts().
+2. **proot stderr was discarded**, making SIGILL undiagnosable.
+   VmController.startVmBlocking now redirects combined proot output to
+   `<base>/proot-boot.log` (Redirect.appendTo) and, on failure, appends the
+   last 15 lines to FailState.ProotBootFailure's user dialog.
+
+Honest status: the SIGILL *root cause* is still unconfirmed. Candidates:
+primary-ABI mismatch (device where BuildAbi picks an ABI whose proot binary
+cannot execute) or an unsupported instruction in the static binary. The new
+boot-log capture will show proot's own diagnostic on the next device run.
+Deploy note: entry.sh is placed during provisioning; existing installs must
+re-run the deploy step (or clear app data) before the /vm bind has content.
