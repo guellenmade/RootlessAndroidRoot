@@ -406,3 +406,9 @@ published (§9).
   downloads (ADR-009 step 2 becomes real once this runs).
 - App-side unchanged: ProotProvisioner downloads from
   releases/download/proot-<abi>/proot and verifies proot.sha256.
+
+- proot build script corrected: upstream has no root Makefile ("make: No targets
+  specified"); the real build is `make -C src` with cross CC from NDK clang
+  (proot v5.5.0, 25dc6a3) + libtalloc cross-built from source (2.4.2, LGPL,
+  GPL-compatible) since proot links it via pkg-config and Android has no
+  talloc package. WITHOUT_PYTHON=1 (no python embedding on Android).
