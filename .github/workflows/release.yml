@@ -24,11 +24,26 @@ jobs:
         with:
           gradle-version: "8.14"
 
+      - name: Decode signing keystore
+        run: |
+          if [ -n "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/rootlessvm-release.keystore"
+            echo "ROOTLESSVM_KEYSTORE=$RUNNER_TEMP/rootlessvm-release.keystore" >> "$GITHUB_ENV"
+            echo "ROOTLESSVM_KEYSTORE_PASSWORD=${{ secrets.SIGNING_STORE_PASSWORD }}" >> "$GITHUB_ENV"
+          else
+            echo "::warning::SIGNING_KEYSTORE_BASE64 not set; building debug-signed APK"
+          fi
+
       - name: Build release APK
         run: gradle :app:assembleRelease --no-daemon
+
+      - name: Rename APK
+        run: |
+          mkdir -p out
+          cp app/build/outputs/apk/release/*.apk out/RootlessVM-v${GITHUB_REF_NAME}.apk
 
       - name: Upload release
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/release/*.apk
+          files: out/*.apk
           generate_release_notes: true

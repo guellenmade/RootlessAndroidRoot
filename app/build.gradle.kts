@@ -9,6 +9,19 @@ android {
     namespace = "io.github.guellenmade.rootlessvm"
     compileSdk = 36
 
+    signingConfigs {
+        create("release") {
+            val ksPath = System.getenv("ROOTLESSVM_KEYSTORE")
+            val ksPass = System.getenv("ROOTLESSVM_KEYSTORE_PASSWORD")
+            if (ksPath != null && File(ksPath).exists() && !ksPass.isNullOrBlank()) {
+                storeFile = File(ksPath)
+                storePassword = ksPass
+                keyAlias = "rootlessvm"
+                keyPassword = ksPass
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "io.github.guellenmade.rootlessvm"
         minSdk = 28
@@ -22,6 +35,11 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (signingConfigs.getByName("release").storeFile != null) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
+            }
         }
     }
 
