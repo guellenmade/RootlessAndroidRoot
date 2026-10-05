@@ -427,3 +427,16 @@ mismatch, firewall refusal) are listed in the runbook.
 - Known issue under investigation: a reported `proot exited with code -4`
   (SIGILL). The fixes above address two launch-path bugs; if the error
   persists on your device, please send the log text shown in the dialog.
+
+## Changelog 2026-10-05 - error dialog shows the real failure (alpha7 candidate)
+
+- The misleading "proot exited with code -4" message was traced to the app's
+  own error mapping: any provisioning error that did not match a known
+  category was silently replaced by a fake proot-boot-failure message, and
+  the real error text was thrown away. proot never actually ran, which is why
+  no log file was generated.
+- Unexpected errors now show their actual message in the dialog (new
+  "unexpected error" category), firewall failures map correctly, and a real
+  proot boot failure reports its true exit code.
+- If you previously saw "-4": please update, clear app data, run
+  "Download everything" again, and report the exact new message if it fails.

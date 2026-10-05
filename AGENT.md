@@ -559,3 +559,22 @@ cannot execute) or an unsupported instruction in the static binary. The new
 boot-log capture will show proot's own diagnostic on the next device run.
 Deploy note: entry.sh is placed during provisioning; existing installs must
 re-run the deploy step (or clear app data) before the /vm bind has content.
+
+### 26. Real cause of the fake "proot exited with code -4" (2026-10-05)
+
+The on-device "-4" was NOT a proot signal death. It was fabricated by
+MainViewModel.failFromReason's catch-all `else` branch: a provisioning step
+(proot/rootfs/vector) threw an exception whose message matched no known
+reason prefix, and the ViewModel replaced it with a hardcoded
+`FailState.ProotBootFailure(-4)`, discarding the real error text. That is
+also why no proot-boot.log existed: proot never ran.
+
+Fixes (honest error propagation, no fabricated states):
+- New `FailState.UnexpectedError(detail)` surfaces the actual exception
+  message and asks the user to report it.
+- failFromReason now also maps `firewall-start-failure:` and parses the real
+  exit code out of `proot-boot-failure:<code>` instead of hardcoding -4.
+- Unknown reasons can no longer masquerade as a proot boot failure.
+
+Consequence: the original SIGILL hypothesis for the first report is unproven;
+the next device run will show the true failing step and message.

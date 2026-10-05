@@ -245,6 +245,9 @@ class MainViewModel(private val locator: ServiceLocator) : ViewModel() {
         reason.startsWith("insufficient-storage") -> FailState.InsufficientStorage(0, 0)
         reason.startsWith("checksum-mismatch") -> FailState.ChecksumMismatch("?", "?")
         reason.startsWith("rootfs-version-incompatible") -> FailState.RootfsVersionIncompatible(0, 0)
-        else -> FailState.ProotBootFailure(-4)
+        reason.startsWith("firewall-start-failure") -> FailState.FirewallStartFailure(reason.substringAfter(':'))
+        reason.startsWith("proot-boot-failure") ->
+            FailState.ProotBootFailure(reason.substringAfter(':').toIntOrNull() ?: -4)
+        else -> FailState.UnexpectedError(reason)
     }
 }
