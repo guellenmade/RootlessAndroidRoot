@@ -30,6 +30,13 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Replace SDK ninja with >= 1.11 (C++20 module scan requirement)
+        run: |
+          pip install --quiet ninja
+          NEW_NINJA="$(python3 -c 'import ninja, os; print(os.path.join(os.path.dirname(ninja.__file__), "data", "bin"))')/ninja" 2>/dev/null || true
+          # pip wheel installs the binary on PATH
+          cp "$(command -v ninja)" "$ANDROID_HOME/cmake/3.31.5/bin/ninja"
+          "$ANDROID_HOME/cmake/3.31.5/bin/ninja" --version
       - name: Build Vector injection artifacts (pinned commit)
         run: |
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018"
