@@ -68,7 +68,7 @@ jobs:
             gh release create "proot-${abi}" \
               --repo "$GITHUB_REPOSITORY" \
               --title "proot ${abi}" \
-              --notes "proot built from source (pinned commit cc03b4b4a302bea04a35a6e1c1b6bbf8a1dd368e) for ${abi}." \
+              --notes "proot built from source (pinned commit 25dc6a3134891f98a79f57ce1c2c1b23ff15cad1 (proot v5.5.0)) for ${abi}." \
               "dist/${abi}/proot" "dist/${abi}/proot.sha256" \
               || gh release upload "proot-${abi}" "dist/${abi}/proot" "dist/${abi}/proot.sha256" --clobber --repo "$GITHUB_REPOSITORY"
           done

@@ -5,7 +5,7 @@ set -euo pipefail
 
 WORKDIR="${1:?usage: build_proot.sh <workdir> <abi>}"
 ABI="${2:?usage: build_proot.sh <workdir> <abi>}"
-PINNED_COMMIT="cc03b4b4a302bea04a35a6e1c1b6bbf8a1dd368e"  # proot-me/proot master
+PINNED_COMMIT="25dc6a3134891f98a79f57ce1c2c1b23ff15cad1"  # proot-me/proot v5.5.0 (verified 2026-10-05)
 
 case "${ABI}" in
 arm64-v8a) CC="aarch64-linux-android24-clang" ;;
@@ -20,11 +20,15 @@ esac
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
 
-if [ ! -d proot-src ]; then
-    git clone --depth 1 https://github.com/proot-me/proot.git proot-src
+if [ ! -d proot-src/.git ]; then
+    git clone https://github.com/proot-me/proot.git proot-src
 fi
 cd proot-src
-git checkout "${PINNED_COMMIT}" 2>/dev/null || git fetch --depth 1 origin "${PINNED_COMMIT}" && git checkout "${PINNED_COMMIT}"
+git fetch origin --tags
+if ! git cat-file -e "${PINNED_COMMIT}^{commit}" 2>/dev/null; then
+    git fetch --depth 1 origin "${PINNED_COMMIT}"
+fi
+git checkout "${PINNED_COMMIT}"
 git submodule update --init --recursive
 
 # proot needs a C compiler + libtalloc; build with the NDK clang and static
