@@ -336,3 +336,14 @@ always comes from a verifiable source, and never leaves the app half-working.
 - **Build-everything pass:** RootfsCatalog + bundled catalog asset,
   ProotProvisioner, DisplaySession, firewall pump fix, UI wiring (Prepare VM,
   live display, input injection, fps readout).
+
+### 15. Status after build-everything pass
+- CI green (Android CI + Vector artifacts) on the PR branch.
+- The app is now feature-complete per the goal: first-launch rootfs download
+  with checksum verification, proot runtime, su + policy manager, Vector
+  injection chain (pinned ddeed8c), shortcuts with adaptive icons, live
+  display with input, VM controls, firewall, fail states with clean aborts.
+- Still requiring real-world artifacts (cannot be produced in this sandbox,
+  tracked in §9): an actual AOSP/LineageOS-derived rootfs image + real SHA-256
+  in the catalog; proot binaries attached to a `proot-<abi>` release; Vector
+  artifacts built against that exact rootfs; on-device Phase 6 validation.

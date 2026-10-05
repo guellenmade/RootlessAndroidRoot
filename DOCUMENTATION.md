@@ -339,3 +339,9 @@ mismatch, firewall refusal) are listed in the runbook.
   on-device execution remains device-dependent and is tracked in AGENT.md §9.
 
 <!-- maintained with AGENT.md; see §13 changelog -->
+- **Build-everything pass (post Phase 6):** First-launch "Prepare VM" flow
+  (proot provisioning per ADR-009 + rootfs download from the bundled catalog
+  per ADR-008, SHA-256 verified), live container display in the Home tab with
+  tap/back input injection and measured fps, rewritten deny-all firewall pump.
+  Rootfs catalog asset added; SHA-256 fields are placeholders until the first
+  rootfs image is built and published (see AGENT.md §9 open tasks).
