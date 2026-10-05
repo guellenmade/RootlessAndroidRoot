@@ -26,6 +26,9 @@ if [ -n "${NDK_DIR}" ] && [ -d "${NDK_DIR}" ]; then
     export ANDROID_NDK_HOME="${NDK_DIR}"
 fi
 export VECTOR_TARGET_API="${API}"
+# Ubuntu/AGP ship Ninja 1.10; C++20 module scanning requires 1.11+. The
+# Vector native sources do not use C++20 modules, so disable the scan.
+export CMAKE_CXX_SCAN_FOR_MODULES=OFF
 
 ./gradlew :daemon:assembleRelease
 mkdir -p "${WORKDIR}/out"
