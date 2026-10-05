@@ -628,3 +628,20 @@ directories, regular files (executable bit from tar mode), hard links
 (copy of the root-relative link target) and symlinks (relative linkName).
 R8 keep rules added for both libraries since release builds are minified.
 This also makes unpacking deterministic regardless of host toybox variant.
+
+### 30. One more checksum drift: in-flight run clobbered assets pre-guard (2026-10-05)
+
+The alpha10 on-device run failed checksum verification for the rootfs. Cause:
+a rootfs-release workflow run that STARTED at 14:37 (before the immutability
+guard of sec 28 was pushed) finished its ~18 min build at 14:55 and published
+with the OLD clobber logic, replacing the assets AFTER alpha9's catalog was
+pinned. Runs started after the guard correctly skip publishing (verified in
+the 15:03 run log).
+
+Current pinned values (catalog v3): arm64 sha256
+fad4a2dda1ffc7bfe6ec027d4297701b353404c948ca8bdb85d3ac7178ab54d1
+(699233300 bytes), x86_64 sha256
+b13721c01caa967c8b14dc713624e46e3cb36a127f400b445b50b33fd2f88978
+(694699424 bytes). Vector assets verified unchanged (14:50, same sizes and
+checksums as catalog). No further clobbering is possible: post-guard runs
+skip when the release exists.

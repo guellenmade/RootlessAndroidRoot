@@ -9,8 +9,8 @@
         "arm64-v8a"
       ],
       "url": "https://github.com/guellenmade/RootlessAndroidRoot/releases/download/rootfs-aosp-13/rootfs-aosp-13-arm64-v8a.tar.xz",
-      "sha256": "6407d26d1a12714cb27f65c2c7829c30cd496fb90f300707791815ccf2fe001a",
-      "sizeBytes": 699220692
+      "sha256": "fad4a2dda1ffc7bfe6ec027d4297701b353404c948ca8bdb85d3ac7178ab54d1",
+      "sizeBytes": 699233300
     },
     {
       "id": "aosp-13-x86_64",
@@ -20,8 +20,8 @@
         "x86_64"
       ],
       "url": "https://github.com/guellenmade/RootlessAndroidRoot/releases/download/rootfs-aosp-13/rootfs-aosp-13-x86_64.tar.xz",
-      "sha256": "f71ddbee5672cc40714132dcd702234297327505806500acdba3e5d6e0e0b625",
-      "sizeBytes": 694676856
+      "sha256": "b13721c01caa967c8b14dc713624e46e3cb36a127f400b445b50b33fd2f88978",
+      "sizeBytes": 694699424
     }
   ],
   "vector": [

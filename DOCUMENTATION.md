@@ -465,3 +465,12 @@ mismatch, firewall refusal) are listed in the runbook.
   decompress xz archives. The rootfs is now extracted entirely in-app with
   Apache Commons Compress and xz-java (FOSS libraries), handling files,
   directories, permissions, hard links and symlinks.
+
+## Changelog 2026-10-05 - final checksum repin (alpha11)
+
+- The alpha10 checksum failure was real: a CI run that started before the
+  release-immutability guard landed rebuilt and replaced the rootfs assets
+  after the previous catalog was pinned. That run was the last one with the
+  old clobber logic; subsequent runs skip publishing when the release
+  exists. The catalog now pins the checksums of the assets that are
+  currently published and stable.
