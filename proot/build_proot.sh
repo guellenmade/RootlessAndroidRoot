@@ -58,11 +58,15 @@ fi
     git submodule update --init --recursive
     make -C src clean >/dev/null 2>&1 || true
     # CC must be a MAKE variable (proot's GNUmakefile defaults to
-    # $(CROSS_COMPILE)gcc). Static link mirrors upstream release builds and
-    # avoids NDK .so arch mismatches at link time.
+    # $(CROSS_COMPILE)gcc). LDFLAGS on the command line OVERRIDES the
+    # makefile's `LDFLAGS += $(pkg-config --libs talloc)` (command-line
+    # variables beat += in makefiles), so -ltalloc must be passed here
+    # explicitly or the link fails with undefined talloc_* symbols.
+    # Static link mirrors upstream release builds and avoids NDK .so
+    # arch mismatches at link time.
     make -C src -j"$(nproc)" V=1 WITHOUT_PYTHON=1 \
         CC="${NDK_CC}" \
-        LDFLAGS="-static -L${TALLOC_PREFIX}/lib" \
+        LDFLAGS="-static -L${TALLOC_PREFIX}/lib -ltalloc" \
         PKG_CONFIG="$(command -v pkg-config)"
 )
 
