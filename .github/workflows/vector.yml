@@ -27,6 +27,8 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
             "platforms;android-33" "ndk;27.2.12479018" "cmake;3.22.1" >/dev/null
 
+      - name: Install Ninja >= 1.11 (C++20 modules requirement)
+        run: pipx install ninja >/dev/null 2>&1 || pip install ninja >/dev/null; ninja --version
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
