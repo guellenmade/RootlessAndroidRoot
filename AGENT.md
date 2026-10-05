@@ -394,3 +394,15 @@ published (§9).
      provisioning failures map to it, not to UnsupportedAbi.
   3. ProotProvisioner reuses an already-provisioned binary (idempotent) and
      keeps its failure reason intact end-to-end.
+
+### 20. proot artifact pipeline (2026-10-05)
+- Fixed proot/build_proot.sh: it ran `cd <workdir>` before creating it
+  (CI log: "cd: proot-work: No such file or directory"), so no binary was
+  ever built. Now: mkdir first, NDK clang CC per ABI (aarch64-linux-android24-clang
+  etc.), pinned proot commit.
+- New proot-release.yml: builds proot for arm64-v8a/armeabi-v7a/x86_64 with
+  NDK 27.2 and publishes per-ABI releases tagged `proot-<abi>` with assets
+  `proot` + `proot.sha256` — exactly the URL scheme ProotProvisioner
+  downloads (ADR-009 step 2 becomes real once this runs).
+- App-side unchanged: ProotProvisioner downloads from
+  releases/download/proot-<abi>/proot and verifies proot.sha256.

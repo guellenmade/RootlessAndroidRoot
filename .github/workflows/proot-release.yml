@@ -1,0 +1,76 @@
+name: proot release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag for the proot binaries (e.g. proot-v1)"
+        required: true
+        default: "proot-v1"
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+env:
+  ANDROID_HOME: /usr/local/lib/android/sdk
+  NDK_VERSION: "27.2.12479018"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a, x86_64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install NDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;${NDK_VERSION}" >/dev/null
+          echo "NDK_TOOLCHAIN=$ANDROID_HOME/ndk/${NDK_VERSION}/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/ndk/${NDK_VERSION}/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
+
+      - name: Build proot
+        run: proot/build_proot.sh "$GITHUB_WORKSPACE/proot-work" "${{ matrix.abi }}"
+
+      - name: Verify binary
+        run: |
+          file "proot-work/out/${{ matrix.abi }}/proot"
+          cat "proot-work/out/${{ matrix.abi }}/proot.sha256"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: proot-${{ matrix.abi }}
+          path: proot-work/out/${{ matrix.abi }}/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all proot binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: proot-*
+          merge-multiple: true
+
+      - name: Publish per-ABI releases
+        run: |
+          TAG="${{ github.event.inputs.tag || 'proot-v1' }}"
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            gh release create "proot-${abi}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "proot ${abi}" \
+              --notes "proot built from source (pinned commit cc03b4b4a302bea04a35a6e1c1b6bbf8a1dd368e) for ${abi}." \
+              "dist/${abi}/proot" "dist/${abi}/proot.sha256" \
+              || gh release upload "proot-${abi}" "dist/${abi}/proot" "dist/${abi}/proot.sha256" --clobber --repo "$GITHUB_REPOSITORY"
+          done
+        env:
+          GH_TOKEN: ${{ github.token }}
