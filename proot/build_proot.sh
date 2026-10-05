@@ -39,7 +39,7 @@ if [ ! -f "${TALLOC_PREFIX}/lib/libtalloc.a" ]; then
             ./configure --prefix="${TALLOC_PREFIX}" \
             --cross-compile --cross-execute=/bin/true \
             --disable-python --disable-rpath --disable-symbol-versions \
-            --bundled-libraries=ALL --static-libraries=talloc
+            --bundled-libraries=ALL
         make -j"$(nproc)"
         make install
     )
