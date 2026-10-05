@@ -1,0 +1,62 @@
+name: rootfs release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  ANDROID_HOME: /usr/local/lib/android/sdk
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [arm64-v8a, x86_64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install extraction tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq e2fsprogs erofs-utils
+      - name: Build rootfs tarball
+        run: rootfs/build_rootfs.sh "$GITHUB_WORKSPACE/rootfs-work" "${{ matrix.abi }}"
+      - name: Verify layout
+        run: |
+          tar -tJf rootfs-work/out/rootfs-aosp-13-${{ matrix.abi }}.tar.xz | grep -E "^.?/?system/bin/(sh|app_process64)$" | head -3
+          ls -la rootfs-work/out/
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rootfs-${{ matrix.abi }}
+          path: rootfs-work/out/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download tarballs
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: rootfs-*
+          merge-multiple: false
+      - name: Publish rootfs release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "rootfs-aosp-13" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "rootfs AOSP 13 (API 33)" \
+            --notes "Android 13 (API 33) rootfs tarballs extracted from the Apache-2.0 AOSP emulator system images (pure AOSP, no GMS). ABI layout: tarball root contains /system." \
+            dist/rootfs-*/rootfs-aosp-13-*.tar.xz dist/rootfs-*/rootfs-aosp-13-*.tar.xz.sha256 \
+            || gh release upload "rootfs-aosp-13" dist/rootfs-*/*.tar.xz dist/rootfs-*/*.tar.xz.sha256 --clobber --repo "$GITHUB_REPOSITORY"
+      - name: Compute catalog values
+        run: |
+          for f in dist/rootfs-*/rootfs-aosp-13-*.tar.xz; do
+            echo "${f}: $(sha256sum "${f}" | cut -d' ' -f1) size=$(stat -c%s "${f}")"
+          done
