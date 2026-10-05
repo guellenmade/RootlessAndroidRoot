@@ -372,3 +372,16 @@ mismatch, firewall refusal) are listed in the runbook.
   artifacts in the catalog are still placeholders with zero checksums; the
   download chain aborts cleanly at the checksum step until they are built
   and published.
+
+## Changelog 2026-10-05 - v0.1.0-alpha4: bundled proot, honest download errors
+
+- Root cause of persistent "proot could not be downloaded": the repository
+  is private, so release asset URLs need authentication and the app's
+  unauthenticated request got a 404.
+- Release APKs now ship the proot binaries inside the APK
+  (assets/bin/proot/<abi>/proot), so the runtime provisions with no network
+  at all; the release download stays as fallback.
+- Download failures now report the HTTP status code in the error dialog.
+- To make the in-app downloads (proot fallback, rootfs, Vector) work over
+  the network, the repository must be made public (also required for the
+  FOSS / F-Droid goal).

@@ -448,3 +448,31 @@ Published releases (URLs match ProotProvisioner's
 Result: the in-app "Download everything" proot step now resolves on real
 devices. Remaining placeholder artifacts: rootfs images and Vector
 components (catalog sha256s still zero) - the next blocker.
+
+### 22. Why downloads failed on-device: repo is PRIVATE (2026-10-05)
+
+The proot artifacts WERE published (section 21), but the on-device download
+still failed with 404: the repository is private, so
+`releases/download/...` URLs require authentication. An unauthenticated
+HttpURLConnection (the app) gets 404. The "download failed" message gave no
+HTTP detail because URL.openStream() throws a bare FileNotFoundException.
+
+Fixes:
+1. Release APKs now BUNDLE the proot binaries: release.yml downloads the
+   published per-ABI binaries into `app/src/main/assets/bin/proot/<abi>/`
+   before assembleRelease. ProotProvisioner's asset-first path (ADR-009
+   step 1) now serves every device without any network access. Verified:
+   the v0.1.0-alpha4 APK contains assets/bin/proot/{arm64-v8a,armeabi-v7a,
+   x86_64}/proot (606320/405808/637464 bytes).
+2. ProotProvisioner now uses HttpURLConnection with explicit timeouts,
+   redirect following, and reports "HTTP <code>" in the failure detail
+   instead of a bare "download failed".
+
+Open decision for the maintainer: making the repository public would also
+fix the download path (and is required for the FOSS/F-Droid goal anyway);
+the bundle-first path works regardless.
+
+Known limitation (honest): if the repo stays private, the rootfs image and
+Vector artifact downloads (catalog URLs) will ALSO fail on-device for the
+same reason; bundling or publishing those artifacts publicly remains open
+(catalog sha256s are placeholders).
