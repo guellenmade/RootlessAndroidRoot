@@ -25,7 +25,6 @@ class ProotProvisioner(private val paths: ContainerPaths) {
         if (target.exists() && target.length() > 0 && target.canExecute()) {
             return Result.success(target)
         }
-        val target = File(paths.runtimeDir, "bin/proot")
         target.parentFile?.mkdirs()
         paths.ensure()
 
