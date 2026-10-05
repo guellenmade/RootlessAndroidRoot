@@ -26,18 +26,23 @@ cd "${WORKDIR}"
 export CC
 export AR=llvm-ar
 export STRIP=llvm-strip
-export PKG_CONFIG_PATH="${WORKDIR}/talloc-install/lib/pkgconfig"
+TALLOC_PREFIX="${WORKDIR}/talloc-${ABI}"
+export PKG_CONFIG_PATH="${TALLOC_PREFIX}/lib/pkgconfig"
 
-# ---- talloc (static, cross-compiled with the NDK) ----
-if [ ! -f "${WORKDIR}/talloc-install/lib/libtalloc.a" ]; then
+# ---- talloc (static, cross-compiled with the NDK clang) ----
+if [ ! -f "${TALLOC_PREFIX}/lib/libtalloc.a" ]; then
     curl -sSLo talloc.tar.gz "https://www.samba.org/ftp/talloc/talloc-${TALLOC_VERSION}.tar.gz"
     tar -xzf talloc.tar.gz
     (
         cd "talloc-${TALLOC_VERSION}"
-        ./configure --prefix="${WORKDIR}/talloc-install" \
+        # talloc's waf configure honors CC from the environment.
+        ./configure --prefix="${TALLOC_PREFIX}" \
             --cross-compile --cross-execute="true" \
-            --disable-python --disable-rpath --disable-symbol-versions
-        make -j"$(nproc)" install
+            --disable-python --disable-rpath --disable-symbol-versions \
+            --bundled-libraries=ALL \
+            CC="${CC}"
+        make -j"$(nproc)"
+        make install
     )
 fi
 
