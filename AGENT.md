@@ -412,3 +412,39 @@ published (§9).
   (proot v5.5.0, 25dc6a3) + libtalloc cross-built from source (2.4.2, LGPL,
   GPL-compatible) since proot links it via pkg-config and Android has no
   talloc package. WITHOUT_PYTHON=1 (no python embedding on Android).
+
+### 21. proot artifacts published (2026-10-05)
+
+Six successive CI failures were diagnosed and fixed in proot/build_proot.sh
+and proot-release.yml; the pipeline is now fully green and the artifacts are
+live. Root causes and fixes (each verified against the CI log of the failed
+run before fixing):
+
+1. Undefined talloc_* symbols at link: command-line LDFLAGS overrides the
+   makefile's `LDFLAGS += $(pkg-config --libs talloc)` (command-line vars
+   beat += in makefiles), so -ltalloc never reached the link. Fix: pass
+   -ltalloc explicitly in our LDFLAGS.
+2. `unable to find library -ltalloc`: talloc's waf build only installs a
+   shared lib. Fix: additionally build a static archive with the NDK clang.
+3. `replace.h not found`: talloc.c includes lib/replace/replace.h; it needs
+   waf-generated config.h from bin/default and -D__STDC_WANT_LIB_EXT1__=1;
+   the bundled replace.c/closefrom.c are compiled into the archive so all
+   symbols resolve statically.
+4. `strip: Unable to recognise the format of the input file` (ARM only):
+   proot's GNUmakefile uses $(CROSS_COMPILE)strip/objcopy/objdump, which
+   resolve to host binutils; host strip accepted x86_64 ELF but not
+   aarch32/arm ELF. Fix: pass STRIP=llvm-strip OBJCOPY=llvm-objcopy
+   OBJDUMP=llvm-objdump as make variables.
+5. Publish job `no matches found for dist/<abi>/proot`: download-artifact
+   with merge-multiple flattened everything into dist/. Fix:
+   merge-multiple: false and assets at dist/proot-<abi>/.
+
+Published releases (URLs match ProotProvisioner's
+`releases/download/proot-%s/proot` + `.sha256` exactly, ADR-009 step 2):
+- proot-arm64-v8a, proot-armeabi-v7a, proot-x86_64, each with assets
+  `proot` and `proot.sha256`, statically linked, built from pinned proot
+  commit 25dc6a3134891f98a79f57ce1c2c1b23ff15cad1 (v5.5.0) + talloc 2.4.2.
+
+Result: the in-app "Download everything" proot step now resolves on real
+devices. Remaining placeholder artifacts: rootfs images and Vector
+components (catalog sha256s still zero) - the next blocker.

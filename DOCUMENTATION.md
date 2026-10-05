@@ -358,3 +358,17 @@ mismatch, firewall refusal) are listed in the runbook.
 - **v0.1.0-alpha3:** fixed false "unsupported ABI" error — real cause
   (missing runtime artifacts) now reported accurately; ABI detection via
   Build.SUPPORTED_ABIS.
+
+## Changelog 2026-10-05 - proot runtime artifacts published
+
+- The proot runtime binaries are now built from source in CI (pinned proot
+  v5.5.0 + statically linked talloc 2.4.2) and published as per-ABI GitHub
+  releases (`proot-arm64-v8a`, `proot-armeabi-v7a`, `proot-x86_64`).
+- The in-app provisioning chain now completes its proot step on real
+  devices: the binary is downloaded from the project's own releases and
+  SHA-256 verified (ADR-009). Earlier "proot runtime component could not be
+  downloaded" errors are resolved.
+- Remaining known gap (stated honestly): rootfs images and Vector (Xposed)
+  artifacts in the catalog are still placeholders with zero checksums; the
+  download chain aborts cleanly at the checksum step until they are built
+  and published.
