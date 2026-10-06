@@ -43,10 +43,14 @@ fun RootlessApp(
     onBack: () -> Unit,
 ) {
     state.failDialog?.let { fail ->
+        val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+        LaunchedEffect(fail) {
+            clipboard.setText(androidx.compose.ui.text.AnnotatedString(fail.userMessage))
+        }
         AlertDialog(
             onDismissRequest = onDismissFail,
             title = { Text("Operation aborted") },
-            text = { Text(fail.userMessage) },
+            text = { Text(fail.userMessage + "\n\n(This message was copied to the clipboard.)") },
             confirmButton = { TextButton(onClick = onDismissFail) { Text("OK") } },
         )
     }

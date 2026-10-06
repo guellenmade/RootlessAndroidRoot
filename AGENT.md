@@ -685,3 +685,26 @@ target: system/lib64, system/framework, and <containerData>/staging.
 The entire provisioning chain is now exercised up to Done on-device.
 Next frontier: container boot (proot + entry.sh + zygote) — first real
 start attempt happens after provisioning completes.
+
+### 33. ADR-013: exec proot from nativeLibraryDir; clipboard; v0.1.1 (2026-10-05)
+
+The alpha13 on-device run finished provisioning completely, then the first
+real VM start failed with `proot-boot-failure:-2` (an exception from
+ProcessBuilder.start(), not a proot exit). Root cause: on targetSdk >= 29
+Android forbids exec() of binaries in app data directories (W^X); our
+provisioned proot under <appdata>/app_vm/runtime/bin could never be exec'd.
+
+**ADR-013: proot ships as a native library.** Release builds pack the proot
+binary into `jniLibs/<abi>/libproot.so` (release.yml updated accordingly),
+the manifest sets `android:extractNativeLibs="true"` so the lib is extracted
+to the APK's nativeLibraryDir — the one packaged location where exec() is
+allowed (same approach as Termux's targetSdk-28 exception, but compliant:
+we keep targetSdk 36). ContainerPaths.prootBin now resolves
+`<nativeLibraryDir>/libproot.so` first (registered in RootlessApplication
+via useNativeLibDir), falling back to the data-dir copy for non-release
+builds. The old assets/bin/proot bundling is retired.
+
+Also in v0.1.1:
+- Error dialogs auto-copy the message to the clipboard (LaunchedEffect +
+  LocalClipboardManager) and note that in the dialog text.
+- versionCode 2, versionName 0.1.1.

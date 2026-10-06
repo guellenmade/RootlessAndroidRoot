@@ -11,6 +11,7 @@
 
     <application
         android:name=".RootlessApplication"
+        android:extractNativeLibs="true"
         android:label="RootlessVM"
         android:icon="@mipmap/ic_launcher"
         android:supportsRtl="true"

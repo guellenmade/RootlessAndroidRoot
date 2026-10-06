@@ -4,9 +4,20 @@ import android.content.Context
 import java.io.File
 
 class ContainerPaths(context: Context) {
+    @Volatile private var nativeLibDir: File? = null
+
+    /** ADR-013: proot must be exec'd from the APK's nativeLibraryDir (the only
+     * packaged location where exec() is allowed on targetSdk >= 29). */
+    fun useNativeLibDir(dir: File) { nativeLibDir = dir }
+
     val base: File = context.getDir("vm", Context.MODE_PRIVATE)
     val runtimeDir: File = File(base, "runtime")
-    val prootBin: File = File(runtimeDir, "bin/proot")
+    val prootBin: File
+        get() {
+            val native = File(nativeLibDir, "libproot.so")
+            if (native.exists() && native.canExecute()) return native
+            return File(runtimeDir, "bin/proot")
+        }
     val rootfsDir: File = File(base, "rootfs")
     val containerTmp: File = File(base, "tmp")
     val containerData: File = File(base, "data")

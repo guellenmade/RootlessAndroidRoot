@@ -492,3 +492,14 @@ mismatch, firewall refusal) are listed in the runbook.
   manager APK was never created before copying into it. All deploy targets
   now create their parent directories first. Provisioning runs through to
   completion; the next step is the actual container boot.
+
+## Changelog - v0.1.1 (alpha14): container actually boots proot
+
+- Fixed the first real VM start failing with "proot exited with code -2":
+  Android (targetSdk >= 29) forbids executing binaries stored in app data.
+  proot is now shipped inside the APK as a native library and executed from
+  the app's native library directory, the only packaged location where
+  execution is allowed. This is the same mechanism other terminal-emulator
+  apps rely on, while keeping the current targetSdk.
+- Error dialogs now automatically copy the message to the clipboard.
+- Version bumped to 0.1.1.
