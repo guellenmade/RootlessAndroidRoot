@@ -83,16 +83,19 @@ class VectorProvisioner(private val paths: ContainerPaths) {
             val dex = files.getValue(COMPONENT_DEX)
             val manager = files[COMPONENT_MANAGER]
 
+            File(rootfs, "system/lib64").mkdirs()
             FileInputStream(inject).use { input ->
                 FileOutputStream(File(rootfs, "system/lib64/libvector_inject.so")).use { input.copyTo(it) }
             }
             File(rootfs, "system/lib64/libvector_inject.so").setExecutable(true, false)
+            File(rootfs, "system/framework").mkdirs()
             FileInputStream(dex).use { input ->
                 FileOutputStream(File(rootfs, "system/framework/vector-xposed.jar")).use { input.copyTo(it) }
             }
             manager?.let { apk ->
+                val staging = File(paths.containerData, "staging").apply { mkdirs() }
                 FileInputStream(apk).use { input ->
-                    FileOutputStream(File(paths.containerData, "staging/vector-manager.apk")).use { input.copyTo(it) }
+                    FileOutputStream(File(staging, "vector-manager.apk")).use { input.copyTo(it) }
                 }
             }
 

@@ -485,3 +485,10 @@ mismatch, firewall refusal) are listed in the runbook.
   change again.
 - The checksum-failure dialog now states which component failed and shows the
   expected vs actual hash, instead of always blaming the rootfs image.
+
+## Changelog 2026-10-05 - staging directory fix (alpha13)
+
+- The Vector deploy step failed because the staging directory for the
+  manager APK was never created before copying into it. All deploy targets
+  now create their parent directories first. Provisioning runs through to
+  completion; the next step is the actual container boot.

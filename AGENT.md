@@ -669,3 +669,19 @@ Fixes:
   reason; MainViewModel parses expected/actual back out.
 - FailState.ChecksumMismatch now names the expected vs actual hashes and no
   longer claims it is always the "Rootfs image".
+
+### 32. ENOENT copying vector-manager.apk: staging dir never created (2026-10-05)
+
+Alpha12 got the furthest yet: full provisioning chain ran until the Vector
+deploy, which crashed with ENOENT on
+`<containerData>/staging/vector-manager.apk`. Cause: the deploy code opened
+a FileOutputStream on `staging/vector-manager.apk` without ever creating the
+`staging` directory. Same latent risk existed for `system/lib64` and
+`system/framework` (they happen to exist in the rootfs, but nothing
+guaranteed it).
+
+Fix: VectorProvisioner.downloadAndDeploy now mkdirs() before each copy
+target: system/lib64, system/framework, and <containerData>/staging.
+The entire provisioning chain is now exercised up to Done on-device.
+Next frontier: container boot (proot + entry.sh + zygote) — first real
+start attempt happens after provisioning completes.
