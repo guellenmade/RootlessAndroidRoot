@@ -9,6 +9,6 @@ class RootlessApplication : Application() {
         super.onCreate()
         ServiceLocator.init(this)
         val libDir = File(applicationInfo.nativeLibraryDir)
-        if (libDir.isDirectory) ServiceLocator.paths.useNativeLibDir(libDir)
+        if (libDir.isDirectory) ServiceLocator.get().paths.useNativeLibDir(libDir)
     }
 }
