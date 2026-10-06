@@ -503,3 +503,11 @@ mismatch, firewall refusal) are listed in the runbook.
   apps rely on, while keeping the current targetSdk.
 - Error dialogs now automatically copy the message to the clipboard.
 - Version bumped to 0.1.1.
+
+## Changelog - v0.1.2: provisioner uses bundled proot
+
+- "Download everything" failed on v0.1.1 because the provisioner still
+  expected proot in the APK assets and fell back to downloading it, even
+  though v0.1.1 already bundles proot as a native library. The provisioner
+  now uses the bundled library directly; no download is needed on release
+  builds.

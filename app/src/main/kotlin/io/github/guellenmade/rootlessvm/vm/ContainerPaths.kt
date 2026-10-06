@@ -10,6 +10,9 @@ class ContainerPaths(context: Context) {
      * packaged location where exec() is allowed on targetSdk >= 29). */
     fun useNativeLibDir(dir: File) { nativeLibDir = dir }
 
+    val bundledProot: File?
+        get() = nativeLibDir?.takeIf { it.isDirectory }?.let { File(it, "libproot.so") }?.takeIf { it.exists() && it.canExecute() }
+
     val base: File = context.getDir("vm", Context.MODE_PRIVATE)
     val runtimeDir: File = File(base, "runtime")
     val prootBin: File

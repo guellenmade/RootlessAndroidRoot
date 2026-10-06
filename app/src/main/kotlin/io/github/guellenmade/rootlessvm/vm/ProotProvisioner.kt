@@ -21,6 +21,7 @@ class ProotProvisioner(private val paths: ContainerPaths) {
         if (abi == "unknown") {
             return Result.failure(IllegalStateException(FailState.UnsupportedAbi(abi).reason))
         }
+        paths.bundledProot?.let { return Result.success(it) }
         val target = File(paths.runtimeDir, "bin/proot")
         if (target.exists() && target.length() > 0 && target.canExecute()) {
             return Result.success(target)

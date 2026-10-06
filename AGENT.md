@@ -708,3 +708,17 @@ Also in v0.1.1:
 - Error dialogs auto-copy the message to the clipboard (LaunchedEffect +
   LocalClipboardManager) and note that in the dialog text.
 - versionCode 2, versionName 0.1.1.
+
+### 34. Provisioner ignored bundled libproot.so (2026-10-06)
+
+On v0.1.1, "Download everything" failed with RuntimeArtifactUnavailable for
+proot: the ADR-013 change moved the bundled proot from assets to
+jniLibs/libproot.so, but ProotProvisioner.provision() still only looked in
+assets and then fell back to the release download. On the user's device the
+download path failed (network), aborting provisioning even though a working
+proot was already bundled in the APK.
+
+Fix: provision() resolves paths.bundledProot (nativeLibraryDir/libproot.so)
+FIRST and returns success immediately; the asset and download paths remain
+as fallbacks for non-release builds. Verified both fallback URLs still
+answer 200 anonymously.
