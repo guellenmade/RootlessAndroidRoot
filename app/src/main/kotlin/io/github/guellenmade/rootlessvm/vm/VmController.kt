@@ -54,6 +54,15 @@ class VmController(
             val cmd = ProotCommandBuilder(paths).build(settings(), emptyList())
             val logFile = File(paths.base, "proot-boot.log")
             logFile.parentFile?.mkdirs()
+            logFile.writeText("cmd: " + cmd.joinToString(" ") + "\n")
+            runCatching {
+                val probe = ProcessBuilder(paths.prootBin.absolutePath, "--version")
+                    .redirectErrorStream(true)
+                    .start()
+                val out = probe.inputStream.bufferedReader().readText()
+                probe.waitFor()
+                logFile.appendText("proot --version -> rc=${probe.exitValue()}\n$out\n")
+            }.onFailure { logFile.appendText("proot --version failed to run: ${it.message}\n") }
             // proot writes diagnostics to stderr; keep the last boot's log
             // so failures are diagnosable on-device (included in the dialog).
             val proc = ProcessBuilder(cmd)
@@ -69,7 +78,7 @@ class VmController(
             } else {
                 prootProcess = null
                 val tail = runCatching {
-                    logFile.readLines().takeLast(15).joinToString("\n")
+                    logFile.readLines().takeLast(40).joinToString("\n")
                 }.getOrDefault("")
                 val fail = FailState.ProotBootFailure(proc.exitValue(), tail)
                 _state.value = VmState.Failed(fail)

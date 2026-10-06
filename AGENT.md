@@ -722,3 +722,20 @@ Fix: provision() resolves paths.bundledProot (nativeLibraryDir/libproot.so)
 FIRST and returns success immediately; the asset and download paths remain
 as fallbacks for non-release builds. Verified both fallback URLs still
 answer 200 anonymously.
+
+### 35. Boot failure 134 (SIGABRT): bad proot args + diagnostics (2026-10-06)
+
+First on-device proot exec succeeded (ADR-013 works) but the container boot
+died with exit 134 = SIGABRT. Inspection of the pinned proot source
+(25dc6a3) showed our ProotCommandBuilder used "-L <resolv.conf>", which is
+NOT a proot option (not in src/cli/proot.h's option table). proot's option
+parser aborts on unknown options. Also verified --rootfs=path IS valid
+(same option as -r).
+
+Fixes:
+- ProotCommandBuilder: -L removed from both build() and execCommand(); kept
+  -r <rootfs> (equivalent to --rootfs=, shorter).
+- VmController.startVmBlocking now writes the full command line into
+  proot-boot.log and runs a `proot --version` preflight probe, logging its
+  rc and output, so a broken binary is immediately distinguishable from
+  argument errors. Dialog log tail raised from 15 to 40 lines.

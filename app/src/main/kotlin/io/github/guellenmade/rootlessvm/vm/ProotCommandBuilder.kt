@@ -18,10 +18,9 @@ class ProotCommandBuilder(private val paths: ContainerPaths) {
         paths.ensure()
         return listOf(
             paths.prootBin.absolutePath,
-            "--rootfs=${rootfs.absolutePath}",
+            "-r", rootfs.absolutePath,
             "-0",
             "-w", "/",
-            "-L", File(runtime, "etc/resolv.conf").absolutePath,
             "-b", "/dev",
             "-b", "/proc",
             "-b", "/sys",
@@ -37,7 +36,7 @@ class ProotCommandBuilder(private val paths: ContainerPaths) {
     fun execCommand(command: List<String>): List<String> =
         listOf(
             paths.prootBin.absolutePath,
-            "--rootfs=${paths.rootfsDir.absolutePath}",
+            "-r", paths.rootfsDir.absolutePath,
             "-0",
             "-w", "/",
             "-b", "/dev", "-b", "/proc", "-b", "/sys",

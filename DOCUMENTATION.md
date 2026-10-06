@@ -511,3 +511,11 @@ mismatch, firewall refusal) are listed in the runbook.
   though v0.1.1 already bundles proot as a native library. The provisioner
   now uses the bundled library directly; no download is needed on release
   builds.
+
+## Changelog - v0.1.3: fix invalid proot option, richer boot log
+
+- The container start died with signal 6 (exit 134): our proot command line
+  contained "-L", which is not a proot option at all (it was never valid —
+  previous builds never got far enough to reach it). The option is removed.
+- The boot log now records the exact command line and proot's own version
+  output before starting, and failure dialogs include the last 40 log lines.
