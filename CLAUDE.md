@@ -42,7 +42,6 @@ Host Android (unrooted)
     │              │    └── Vector (LSPlant + Dobby + XposedBridge/dex + lspd)
     │              ├── su wrapper (policy JSON from host)
     │              └── container apps (hooked by Xposed modules, llvmpipe rendering)
-    ├── FirewallVpnService (TUN-based deny-all for app UID)
     ├── ShortcutSync (pinned launcher shortcuts → boot VM → open app)
     └── DisplaySession (container screencap stream → host Compose canvas + input injection)
 ```
@@ -52,7 +51,6 @@ Host Android (unrooted)
 | Package | Responsibility |
 |---|---|
 | `vm/` | VmService lifecycle, ProotCommandBuilder, VmController, ContainerSession, DisplaySession, ProotProvisioner, VectorProvisioner, GpuDetector, ContainerPaths, FailState |
-| `vpn/` | FirewallVpnService (TUN deny-all) |
 | `shortcut/` | ShortcutSync, AdaptiveIconFactory |
 | `xposed/` | XposedModuleStore (container module config) |
 | `root/` | SuPolicyStore (per-app grant/deny JSON) |
@@ -84,7 +82,7 @@ Host Android (unrooted)
 - **ADR-004**: No prebuilt blobs in git — proot and Vector built from pinned source in CI.
 - **ADR-005**: Xposed injection via zygote `app_process64` wrapper + `LD_PRELOAD` (no Zygisk/Magisk).
 - **ADR-006**: Display = container `screencap` polling stream (v1).
-- **ADR-007**: Firewall = VpnService deny-all for app UID.
+- **ADR-007**: ~~Firewall = VpnService deny-all~~ — **REMOVED**: VpnService is system-wide on Android (blocked ALL device internet, not just the container); per-UID filtering is impossible without root. Firewall deleted.
 - **ADR-008**: Rootfs catalog as bundled asset (`assets/rootfs/catalog.json`), images on GitHub Releases.
 - **ADR-009**: Proot provisioning chain: bundled asset → GitHub Releases download (SHA-256) → UnsupportedAbi fail state.
 

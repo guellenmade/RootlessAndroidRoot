@@ -1,7 +1,5 @@
 package io.github.guellenmade.rootlessvm.ui
 
-import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,7 +12,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.activity.ComponentActivity
 import io.github.guellenmade.rootlessvm.di.ServiceLocator
-import io.github.guellenmade.rootlessvm.vm.VmService
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels(
@@ -27,15 +24,6 @@ class MainActivity : ComponentActivity() {
             }
         },
     )
-
-    private val vpnPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                startVpnAndVm()
-            } else {
-                viewModel.dismissFail()
-            }
-        }
 
     private val apkPicker =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -78,14 +66,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    fun requestVpnPermission(prepared: Intent?) {
-        prepared?.let { vpnPermissionLauncher.launch(it) }
-    }
-
-    private fun startVpnAndVm() {
-        startService(
-            Intent(this, io.github.guellenmade.rootlessvm.vpn.FirewallVpnService::class.java),
-        )
-        VmService.start(this)
-    }
 }

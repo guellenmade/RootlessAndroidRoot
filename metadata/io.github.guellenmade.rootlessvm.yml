@@ -18,7 +18,6 @@ Description: |-
 
     * GPL-3.0-or-later, no trackers, no proprietary images.
     * Container apps appear as launcher shortcuts (adaptive icons).
-    * Network firewall (deny-all) for the container via VpnService.
     * Software rendering (llvmpipe) with honest performance reporting;
       AVF/pKVM fast path is detected and documented as roadmap.
 

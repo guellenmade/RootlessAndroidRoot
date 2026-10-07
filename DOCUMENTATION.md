@@ -44,7 +44,6 @@ modified, never rooted, and never touched by the container.
 | In-app grid of all container apps | v1 |
 | APK install into container via file picker | v1 |
 | VM controls: start/stop, RAM/CPU limits, snapshots | v1 |
-| Network firewall (VpnService, deny-all) | v1 |
 | Software rendering (llvmpipe), GPU detection + honest reporting | v1 |
 | AVF/pKVM fast path with GPU passthrough | roadmap (ADR-002) |
 
@@ -55,7 +54,6 @@ flowchart TD
     subgraph HOST[Host Android — unrooted]
         UI[RootlessVM app\nCompose UI + MVVM]
         SVC[VmService\nforeground service]
-        VPN[FirewallVpnService\nTUN, deny-all]
         SC[ShortcutSync\nrequestPinShortcut]
         DB[(JSON stores:\nsu policy, apps, modules)]
     end
@@ -72,7 +70,6 @@ flowchart TD
     ZYG --> APPS
     APPS --> SCR --> UI
     APPS -->|install events| DB --> SC
-    SVC --> VPN
     SU <--> DB
 end
 ```
@@ -95,7 +92,6 @@ VM start
 | Module (repo path) | Responsibility |
 |---|---|
 | `app/src/main/kotlin/.../vm/` | VmService lifecycle, ProotCommandBuilder (argv construction incl. RAM/CPU limits via cgroup-like `taskset`/`ulimit` inside the container), display bridge (screencap polling), input injection, GPU detection, APK installation into the container. |
-| `app/src/main/kotlin/.../vpn/` | FirewallVpnService: TUN-based deny-all for the app UID; `protect()`s host management sockets. |
 | `app/src/main/kotlin/.../shortcut/` | ShortcutSync: scans container package list after installs, builds adaptive icons, pins launcher shortcuts; intent handling: boot VM if needed → open target app. |
 | `app/src/main/kotlin/.../root/` | SuPolicyManager: per-app grant/deny stored as JSON consumed by the container-side `su` wrapper; request logging. |
 | `app/src/main/kotlin/.../xposed/` | Container module config writer/reader: enable/disable modules, per-app scope, reading Vector's config; surface logs in manager UI. |
@@ -161,8 +157,7 @@ refuses to start a VM whose rootfs release has no matching Vector artifact set
 1. Install the APK (from F-Droid metadata target or GitHub Releases).
 2. On first launch the app downloads the rootfs (AOSP/LineageOS-derived),
    verifies its SHA-256, and unpacks it into app-private storage.
-3. Grant the VPN permission when prompted if you want the container firewall.
-4. (Optional) Pin container apps to your launcher from the in-app grid.
+3. (Optional) Pin container apps to your launcher from the in-app grid.
 
 Storage requirement: roughly 3–4 GB free for rootfs download + unpack.
 
@@ -210,9 +205,14 @@ zygote — inside the container only. This is a Riru-style direct load adapted
 to a rootfs we control; the exact chain is documented in AGENT.md §2.
 
 **Is the container network-isolated?**
-Yes by default: a VpnService routes all of the app UID's traffic into a TUN
-device and drops it. v1 is deny-all (the container has no network). Selective
-rules are on the roadmap.
+No. An earlier version shipped a VpnService-based deny-all firewall, but it
+was removed: Android's VpnService is system-wide, so it blocked internet for
+the entire device — not just the container — while the VM ran. Per-UID
+network filtering without root is not possible on Android (see ADR-007 in
+AGENT.md for the full rationale). The container has network access, bounded
+by the app sandbox: it can only reach the network under our app UID and can
+never touch other apps' data. If you need the container offline, revoke the
+app's network permission or use a work profile.
 
 **Which Xposed modules work?**
 Modules using the legacy Xposed API or the modern libxposed API, targeting the
@@ -228,14 +228,16 @@ The app reports measured performance instead of hiding it.
 
 - No trackers, no analytics, no proprietary components (GPL-3.0-or-later).
 - The container cannot touch host data outside the app's private directory.
-- The firewall denies all container network egress by default.
+- The container has network access (the VpnService firewall was removed —
+  see §9 and ADR-007); isolation comes from the app sandbox, not the network.
 - Checksums (SHA-256) are mandatory for rootfs downloads; failure = clean abort.
 
 ## 11. Known limitations
 
 See AGENT.md §8 — kept in one place so agents and humans never diverge.
-Summary: proot/llvmpipe performance, deny-all firewall v1, polling-based
-display, Vector artifacts tied to rootfs Android version, AVF path roadmap.
+Summary: proot/llvmpipe performance, container has network access (firewall
+removed — system-wide blocking, see ADR-007), polling-based display, Vector
+artifacts tied to rootfs Android version, AVF path roadmap.
 
 ## 11a. Deep dive: the shortcut mechanism
 
@@ -259,7 +261,7 @@ The full pipeline, step by step:
    forwards the user to the main UI with the live container display.
 
 Everything runs under our app UID: no host permissions beyond the
-shortcut + VPN + service set declared in the manifest.
+shortcut + service set declared in the manifest.
 
 ## 11b. Deep dive: Xposed without Magisk — exact chain
 
@@ -321,7 +323,7 @@ Short version (arm64, Android 13+ host recommended):
    logs; confirm the host remains unrooted.
 
 Pass criteria and negative tests (checksum mismatch, artifact version
-mismatch, firewall refusal) are listed in the runbook.
+mismatch) are listed in the runbook.
 
 ## 13. Changelog
 
@@ -519,3 +521,18 @@ mismatch, firewall refusal) are listed in the runbook.
   previous builds never got far enough to reach it). The option is removed.
 - The boot log now records the exact command line and proot's own version
   output before starting, and failure dialogs include the last 40 log lines.
+
+## Changelog - firewall removed (2026-10-07)
+
+- The VpnService-based network firewall was removed entirely. On-device
+  testing showed it blocked ALL device internet (not even `ping 1.1.1.1`
+  worked) because Android's VpnService is system-wide: `addRoute("0.0.0.0", 0)`
+  routes every app's traffic, not just the container's UID. Per-UID network
+  filtering without root is not possible on Android. The container now has
+  network access; isolation remains the app-private sandbox. Full rationale
+  in ADR-007 (AGENT.md).
+- Same day: security hardening pass — mandatory HTTPS + timeouts + redirect
+  re-validation for all artifact downloads (shared `HttpFetch`), tar-slip
+  protection in the rootfs unpacker, robust su policy parsing, input-injection
+  argument fix, package-list parsing fix, display Bitmap recycling, ANR and
+  coroutine-leak fixes.

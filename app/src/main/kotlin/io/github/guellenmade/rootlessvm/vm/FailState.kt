@@ -41,9 +41,4 @@ sealed class FailState(val reason: String, val userMessage: String) {
         reason = "unexpected-error",
         userMessage = "An unexpected error occurred: $detail\n\nPlease report this message so the cause can be fixed.",
     )
-
-    class FirewallStartFailure(detail: String) : FailState(
-        reason = "firewall-start-failure:$detail",
-        userMessage = "The network firewall could not be started ($detail). The VM was not started because firewall mode is on.",
-    )
 }

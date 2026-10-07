@@ -29,7 +29,6 @@ Host Android (unrooted)
     │              │    └── Vector (LSPlant + Dobby + XposedBridge/dex + lspd)
     │              ├── su wrapper (policy JSON written by the host manager UI)
     │              └── container apps (installed APKs, rendered via llvmpipe)
-    ├── FirewallVpnService (TUN-based deny-all gate for container traffic)
     ├── Shortcut sync (pinned launcher shortcuts -> boot VM -> open app)
     └── Display bridge (container screencap stream -> host VirtualDisplay UI)
 ```
@@ -97,7 +96,6 @@ is a fail state -> clean abort with dialog, never a half-working state.
 │           ├── data/        (settings, rootfs manifest/installer, stores, scanner)
 │           ├── vm/          (VmService, ProotCommandBuilder, config, display bridge,
 │           │                 input injector, GPU detector, APK installer)
-│           ├── vpn/         (FirewallVpnService, protecting socket factory)
 │           ├── shortcut/    (ShortcutSync, AdaptiveIconFactory)
 │           ├── xposed/      (container module config writer, module list reader)
 │           ├── root/        (su policy manager, su request log tailer)
@@ -216,18 +214,28 @@ container's own screen capture tooling. Frame rate is limited (see limitations).
 This is honest v1 scope; a minicap-style shared-memory path is a roadmap item.
 
 ### ADR-007: Network firewall = VpnService deny-all for the app UID
-**Decision:** FirewallVpnService routes the whole app UID's traffic into a TUN
-device and drops it; the host app's own management sockets are `protect()`-ed.
-**Rationale:** proot children share the host app's UID, so per-UID filtering at
-the VPN layer is the only rootless lever we have. v1 is deny-all (container
-offline); per-destination allow-lists are a roadmap item. Users are told
-plainly: firewall on = container has no network.
+**Status: REMOVED (decision reversed, 2026-10-07).**
+**Original decision:** FirewallVpnService routes the whole app UID's traffic
+into a TUN device and drops it; the host app's own management sockets are
+`protect()`-ed.
+**Why removed:** Android's VpnService is system-wide — it intercepts traffic
+from ALL apps on the device, not just our UID. The `addRoute("0.0.0.0", 0)`
+implementation therefore blocked internet for the entire device while the VM
+ran (on-device confirmed: not even `ping 1.1.1.1` worked). Per-UID filtering
+is impossible via VpnService without root, `protect()` only covers our own
+sockets, and no rootless per-app firewall API exists on Android. The feature
+as designed could never work as advertised. The firewall (service, setting,
+UI toggle, manifest entry, fail state) is deleted; the container has network
+access. The container remains sandboxed to the app-private directory, which
+bounds the blast radius; users who need isolation can revoke the INTERNET
+permission (Android 13+ per-app network revocation) or use a work profile.
 
 ## 8. Known limitations and fail states
 
 Limitations (honest):
 - proot syscall translation + llvmpipe = slow GPU-heavy apps, low display fps.
-- Firewall is deny-all in v1; no selective allow rules.
+- Container has network access; the v1 firewall was removed (ADR-007) because
+  VpnService is system-wide on Android and blocked all device internet.
 - Display streaming is polling-based (screencap), input has visible latency.
 - Vector artifacts must be rebuilt when the rootfs Android version changes.
 - AVF/pKVM path is not implemented; detection exists, path is roadmap.
@@ -239,7 +247,6 @@ Fail states (clean abort + dialog, never half-working):
 - Rootfs Android version incompatible with built Vector artifacts
   (manifest cross-check before VM start).
 - proot exit at boot (non-zero within grace period) -> stop VM, report.
-- Firewall start failure -> VM refuses to start in "firewall on" mode.
 
 ## 9. Open tasks (living list)
 
@@ -249,7 +256,6 @@ Fail states (clean abort + dialog, never half-working):
 - [ ] On-device validation of the full injection chain (Phase 6 runbook in
       DOCUMENTATION.md §12).
 - [ ] minicap-style shared-memory display path (replaces ADR-006 polling).
-- [ ] Selective firewall allow-list.
 - [ ] AVF/pKVM fast path prototype (ADR-002).
 - [ ] Snapshot export/import UI polish (engine supports it; UI is minimal).
 - [ ] Translations; F-Droid submission after first release tag.
@@ -739,3 +745,46 @@ Fixes:
   proot-boot.log and runs a `proot --version` preflight probe, logging its
   rc and output, so a broken binary is immediately distinguishable from
   argument errors. Dialog log tail raised from 15 to 40 lines.
+
+### 36. Security hardening + bug pass (2026-10-07)
+
+Fixes applied on top of v0.1.3 (commit 85f4e80):
+- HttpFetch (net/): mandatory HTTPS, connect/read timeouts, redirect
+  re-validation for ALL artifact downloads (proot, rootfs, Vector). Replaces
+  URL.openStream() (no timeouts) and HttpURLConnection with
+  instanceFollowRedirects=true (no redirect scheme re-check).
+- RootfsInstaller.unpack: tar-slip/zip-slip protection — tar entries,
+  hardlink targets, and symlinks that escape the destination via ../ or
+  absolute paths are rejected.
+- policy_check.sh: robust policy parsing — matches "uid":N, with the exact
+  field structure (prevents uid 1000 matching uid 10001), handles
+  pretty-printed JSON.
+- su wrapper: exec path fixed for proot -0 (was referencing a non-existent
+  su-exec-real binary); granted = exec sh -c "$*" or shell.
+- injectInput: passes separate args to `input` (was passing the whole event
+  string as one arg, which `input` rejects).
+- MainViewModel.rescan: package-list parsing fixed — `pm list packages -3`
+  outputs "package:name" (the old regex expected name=version and never
+  matched); dumpsys label parsing broadened.
+- installApk failure: maps to UnexpectedError with the real message instead
+  of a fabricated ProotBootFailure(-3).
+- DisplaySession: previous frame's Bitmap recycled (OOM from 250ms polling).
+- VmService.onDestroy: stopVm off the main thread (was ANR on waitFor()).
+- ShortcutLaunchActivity: lifecycleScope instead of a raw CoroutineScope.
+- start_container.sh: invalid -L option removed, bind paths aligned with
+  ContainerPaths (legacy script, kept in sync).
+- install_apk_in_container.sh: broken session-ID grep fixed.
+
+### 37. ADR-007 firewall removed (2026-10-07)
+
+On-device finding: with the firewall active, the device lost ALL internet
+(not even ping 1.1.1.1) — because VpnService is system-wide on Android and
+`addRoute("0.0.0.0", 0)` routes every app's traffic, not just our UID.
+Per-UID filtering without root is not possible; the feature could never work
+as designed. Removed entirely per maintainer decision (option C of the
+review): FirewallVpnService, vpn/ package, firewallEnabled setting, Settings
+toggle, VPN permission flow in MainViewModel/MainActivity, manifest service
+declaration + FOREGROUND_SERVICE_DATA_SYNC permission, and the
+FirewallStartFailure fail state. The container has network access; the
+sandbox to app-private storage remains the isolation boundary. ADR-007 text
+above records the reversal rationale.

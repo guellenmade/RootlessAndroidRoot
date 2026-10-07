@@ -16,8 +16,8 @@ module hooks a target app inside the container.
 
 1. **First launch:** open the app; download the rootfs (checksum-verified);
    confirm the "VM not installed" state disappears.
-2. **Start VM:** Home tab -> Start VM. Grant the VPN permission when asked
-   (firewall mode). Expect: notification "VM running…", no fail dialog.
+2. **Start VM:** Home tab -> Start VM. Expect: notification "VM running…",
+   no fail dialog.
 3. **Install two container apps:** Apps tab -> Install APK -> pick two small
    FOSS APKs (e.g. the F-Droid client, and "Material Files" or any simple
    app). After each install, the app rescans the container PackageManager
@@ -52,4 +52,3 @@ module hooks a target app inside the container.
   deleted.
 - Start VM with mismatched Vector artifacts -> version-incompatible dialog,
   VM does not start.
-- Disable firewall VPN permission -> VM refuses to start in firewall mode.

@@ -290,19 +290,14 @@ fun XposedTab(state: UiState, onModuleToggle: (String, Boolean) -> Unit) {
 fun SettingsTab(state: UiState, onSaveSettings: (VmSettings) -> Unit) {
     var ram by remember(state.settings.ramMb) { mutableIntStateOf(state.settings.ramMb) }
     var cpus by remember(state.settings.cpuCount) { mutableIntStateOf(state.settings.cpuCount) }
-    var firewall by remember(state.settings.firewallEnabled) { mutableStateOf(state.settings.firewallEnabled) }
     Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
         Text("VM limits", style = MaterialTheme.typography.titleMedium)
         Text("RAM: $ram MB")
         Slider(value = ram.toFloat(), onValueChange = { ram = it.toInt() }, valueRange = 1024f..8192f, steps = 13)
         Text("CPU cores: $cpus")
         Slider(value = cpus.toFloat(), onValueChange = { cpus = it.toInt() }, valueRange = 1f..8f, steps = 6)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = firewall, onCheckedChange = { firewall = it })
-            Text("Firewall (deny-all network for the container)")
-        }
         Button(onClick = {
-            onSaveSettings(VmSettings(ramMb = ram, cpuCount = cpus, firewallEnabled = firewall))
+            onSaveSettings(VmSettings(ramMb = ram, cpuCount = cpus))
         }) { Text("Save") }
         Spacer(Modifier.height(16.dp))
         Text(

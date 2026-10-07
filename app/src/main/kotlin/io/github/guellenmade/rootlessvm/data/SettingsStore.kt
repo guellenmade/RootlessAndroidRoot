@@ -9,7 +9,6 @@ import java.io.File
 data class VmSettings(
     val ramMb: Int = 3072,
     val cpuCount: Int = 4,
-    val firewallEnabled: Boolean = true,
     val renderer: String = RENDERER_LLVMPIPE,
 ) {
     companion object {

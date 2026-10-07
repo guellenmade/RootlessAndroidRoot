@@ -79,24 +79,11 @@ class MainViewModel(private val locator: ServiceLocator) : ViewModel() {
             _ui.value = _ui.value.copy(failDialog = fail)
             return
         }
-        if (_ui.value.settings.firewallEnabled) {
-            val prepared = android.net.VpnService.prepare(context)
-            if (prepared != null) {
-                (context as? MainActivity)?.requestVpnPermission(prepared)
-                return
-            }
-        }
         io.github.guellenmade.rootlessvm.vm.VmService.start(context)
     }
 
     fun stopVm(context: Context) {
         io.github.guellenmade.rootlessvm.vm.VmService.stop(context)
-        if (_ui.value.settings.firewallEnabled) {
-            context.startService(
-                android.content.Intent(context, io.github.guellenmade.rootlessvm.vpn.FirewallVpnService::class.java)
-                    .setAction(io.github.guellenmade.rootlessvm.vpn.FirewallVpnService.ACTION_STOP),
-            )
-        }
     }
 
     fun prepareVm(context: Context) {
@@ -256,7 +243,6 @@ class MainViewModel(private val locator: ServiceLocator) : ViewModel() {
             else FailState.ChecksumMismatch(payload, "")
         }
         reason.startsWith("rootfs-version-incompatible") -> FailState.RootfsVersionIncompatible(0, 0)
-        reason.startsWith("firewall-start-failure") -> FailState.FirewallStartFailure(reason.substringAfter(':'))
         reason.startsWith("proot-boot-failure") ->
             FailState.ProotBootFailure(reason.substringAfter(':').toIntOrNull() ?: -4)
         else -> FailState.UnexpectedError(reason)
