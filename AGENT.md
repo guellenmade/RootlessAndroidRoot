@@ -756,7 +756,7 @@ provisioner fell through to the download path — which failed on the device
 for network reasons.
 
 Fixes:
-- app/build.gradle.kts: release buildType sets isUseLegacyPackaging = true
+- app/build.gradle.kts: packaging { jniLibs { useLegacyPackaging = true } } (global, not per buildType — isUseLegacyPackaging does not exist in the buildType DSL)
   so .so files are stored uncompressed and extracted to nativeLibraryDir at
   install time (required for ADR-013 exec-from-nativeLibraryDir).
 - FailState.RuntimeArtifactUnavailable reason now carries the real error
