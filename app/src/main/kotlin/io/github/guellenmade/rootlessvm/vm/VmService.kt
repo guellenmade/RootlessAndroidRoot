@@ -49,7 +49,8 @@ class VmService : Service() {
     }
 
     override fun onDestroy() {
-        locator.vmController.stopVm()
+        // stopVm() blocks on proc.waitFor(); run off the main thread to avoid ANR.
+        scope.launch { locator.vmController.stopVm() }
         super.onDestroy()
     }
 

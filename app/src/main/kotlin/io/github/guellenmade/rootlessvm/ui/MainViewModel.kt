@@ -186,7 +186,7 @@ class MainViewModel(private val locator: ServiceLocator) : ViewModel() {
                 .onSuccess { rescan(context) }
                 .onFailure {
                     _ui.value = _ui.value.copy(
-                        failDialog = FailState.ProotBootFailure(-3),
+                        failDialog = FailState.UnexpectedError("APK install failed: ${it.message ?: "unknown"}"),
                     )
                 }
         }
@@ -195,17 +195,23 @@ class MainViewModel(private val locator: ServiceLocator) : ViewModel() {
     fun rescan(context: Context) {
         viewModelScope.launch {
             session.listPackages().onSuccess { out ->
-                val packages = out.lines().mapNotNull { l ->
-                    Regex("package:(.*)=(.*)").find(l)?.groupValues?.get(2)
-                }
+                // `pm list packages -3` outputs lines like "package:com.example.app"
+                val packages = out.lines()
+                    .filter { it.startsWith("package:") }
+                    .map { it.removePrefix("package:").trim() }
+                    .filter { it.isNotBlank() }
                 packages.forEach { pkg ->
                     val info = session.packageInfo(pkg).getOrDefault("")
-                    val label = Regex("label=([^ ]*)").find(info)?.groupValues?.get(1) ?: pkg
+                    // dumpsys package output varies; try common label patterns.
+                    val label = Regex("applicationLabel:\\s*(.+)").find(info)?.groupValues?.get(1)?.trim()
+                        ?: Regex("label=([^\\n]*)").find(info)?.groupValues?.get(1)?.trim()
+                        ?: pkg
+                    val versionName = Regex("versionName=([^\\s]+)").find(info)?.groupValues?.get(1) ?: ""
                     locator.containerApps.upsert(
                         ContainerApp(
                             packageName = pkg,
                             label = label,
-                            versionName = Regex("versionName=([^ ]*)").find(info)?.groupValues?.get(1) ?: "",
+                            versionName = versionName,
                             iconFile = locator.containerApps.iconFileFor(pkg).absolutePath,
                             installedAt = System.currentTimeMillis(),
                         ),

@@ -4,7 +4,7 @@
 set -eu
 APK="$1"
 
-SESSION="$(/system/bin/pm install-create -r 2>/dev/null | grep -o '[[0-9]\{1,\}]*' | tr -d '[]')"
+SESSION="$(/system/bin/pm install-create -r 2>/dev/null | grep -oE '\[[0-9]+\]' | tr -d '[]')"
 /system/bin/pm install-write -S base.apk "${SESSION}" "${APK}"
 /system/bin/pm install-commit "${SESSION}"
 /system/bin/rm -f "${APK}"

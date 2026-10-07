@@ -65,8 +65,14 @@ class FirewallVpnService : VpnService() {
 
     private fun stopFirewall() {
         running = false
-        tun?.close()
+        // Closing the TUN fd unblocks the pump thread's read() so it can exit.
+        runCatching { tun?.close() }
         tun = null
+        pumpThread?.let { thread ->
+            // Don't join on the main thread; give it a moment off-thread if called from UI.
+            thread.interrupt()
+        }
+        pumpThread = null
     }
 
     override fun onDestroy() {

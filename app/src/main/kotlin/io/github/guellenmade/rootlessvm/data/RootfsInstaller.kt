@@ -51,8 +51,8 @@ class RootfsInstaller(
         }
 
     private fun download(manifest: RootfsManifest, target: File, onProgress: (Progress) -> Unit) {
-        val url = java.net.URI(manifest.url).toURL()
-        url.openStream().use { input ->
+        // HTTPS enforced inside HttpFetch.open (including redirect re-validation).
+        io.github.guellenmade.rootlessvm.net.HttpFetch.open(manifest.url).use { input ->
             target.outputStream().use { out ->
                 val buf = ByteArray(64 * 1024)
                 var read: Int
@@ -85,27 +85,41 @@ class RootfsInstaller(
 
     private fun unpack(archive: File, dest: File) {
         dest.mkdirs()
+        val destCanonical = dest.canonicalFile
         XZInputStream(archive.inputStream().buffered(1 shl 16)).use { xzIn ->
             TarArchiveInputStream(xzIn).use { tarIn ->
                 var entry: TarArchiveEntry?
                 while (tarIn.nextTarEntry.also { entry = it } != null) {
                     val e = entry ?: break
-                    val out = File(dest, e.name)
+                    // Zip-slip / tar-slip protection: reject entries that would
+                    // escape the destination directory via ../ or absolute paths.
+                    val out = File(dest, e.name).canonicalFile
+                    require(out.path.startsWith(destCanonical.path + File.separator) || out == destCanonical) {
+                        "tar entry escapes destination: ${e.name}"
+                    }
                     if (e.isDirectory) {
                         out.mkdirs()
                     } else {
                         out.parentFile?.mkdirs()
                         if (e.isLink) {
-                            val target = File(dest, e.linkName)
+                            // Hard link: the link target must also be inside dest.
+                            val target = File(dest, e.linkName).canonicalFile
+                            require(target.path.startsWith(destCanonical.path + File.separator) || target == destCanonical) {
+                                "tar hardlink target escapes destination: ${e.linkName}"
+                            }
                             out.delete()
                             target.copyTo(out, overwrite = true)
                             if (target.canExecute()) out.setExecutable(true)
                         } else if (e.isSymbolicLink) {
+                            // Symlink: reject absolute targets and targets escaping dest.
+                            val linkTarget = java.nio.file.Path.of(e.linkName)
+                            require(!linkTarget.isAbsolute) { "absolute symlink rejected: ${e.linkName}" }
+                            val resolved = out.parentFile.canonicalFile.toPath().resolve(linkTarget).normalize()
+                            require(resolved.startsWith(destCanonical.toPath())) {
+                                "symlink escapes destination: ${e.linkName}"
+                            }
                             out.delete()
-                            java.nio.file.Files.createSymbolicLink(
-                                out.toPath(),
-                                java.nio.file.Path.of(e.linkName),
-                            )
+                            java.nio.file.Files.createSymbolicLink(out.toPath(), linkTarget)
                         } else {
                             out.outputStream().use { tarIn.copyTo(it) }
                             if (e.mode and 0x100 != 0) out.setExecutable(true)

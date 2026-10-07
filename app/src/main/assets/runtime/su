@@ -26,7 +26,13 @@ DECISION="$(
 
 case "${DECISION}" in
 granted)
-    exec "${0%.real}-exec-real" "$@"
+    # In a proot -0 container every process already runs as uid 0 (fake root),
+    # so "su" just needs to run the requested command — no real su binary needed.
+    if [ $# -gt 0 ]; then
+        exec /system/bin/sh -c "$*"
+    else
+        exec /system/bin/sh
+    fi
     ;;
 *)
     echo "su: request denied for uid ${CALLER_UID} (${CALLER})" >&2

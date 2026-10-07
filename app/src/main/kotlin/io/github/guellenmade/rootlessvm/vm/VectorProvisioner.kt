@@ -114,7 +114,7 @@ class VectorProvisioner(private val paths: ContainerPaths) {
     private fun downloadVerified(artifact: CatalogVectorArtifact, destDir: File): File {
         val target = File(destDir, artifact.component)
         val tmp = File(destDir, "${artifact.component}.download")
-        java.net.URI(artifact.url).toURL().openStream().use { input ->
+        io.github.guellenmade.rootlessvm.net.HttpFetch.open(artifact.url).use { input ->
             tmp.outputStream().use { input.copyTo(it) }
         }
         val digest = MessageDigest.getInstance("SHA-256")

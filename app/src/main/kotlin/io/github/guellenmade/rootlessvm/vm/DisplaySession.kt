@@ -41,7 +41,11 @@ class DisplaySession(
                     val delta = (now - last) / 1e9
                     last = now
                     avgDelta = if (avgDelta == 0.0) delta else (avgDelta * 0.8 + delta * 0.2)
+                    // Recycle the previous frame's bitmap to avoid OOM from
+                    // continuous polling (every POLL_MS a new Bitmap is decoded).
+                    val prev = _frame.value.bitmap
                     _frame.value = Frame(bmp, if (avgDelta > 0) 1.0 / avgDelta else 0.0, null)
+                    prev?.let { if (it != bmp && !it.isRecycled) it.recycle() }
                 }.onFailure {
                     _frame.value = Frame(null, 0.0, it.message)
                 }
@@ -56,19 +60,19 @@ class DisplaySession(
     }
 
     suspend fun tap(x: Int, y: Int) {
-        session.injectInput("tap $x $y")
+        session.injectInput("tap", x.toString(), y.toString())
     }
 
     suspend fun swipe(x1: Int, y1: Int, x2: Int, y2: Int) {
-        session.injectInput("swipe $x1 $y1 $x2 $y2 300")
+        session.injectInput("swipe", x1.toString(), y1.toString(), x2.toString(), y2.toString(), "300")
     }
 
     suspend fun back() {
-        session.injectInput("keyevent 4")
+        session.injectInput("keyevent", "4")
     }
 
     suspend fun home() {
-        session.injectInput("keyevent 3")
+        session.injectInput("keyevent", "3")
     }
 
     companion object {

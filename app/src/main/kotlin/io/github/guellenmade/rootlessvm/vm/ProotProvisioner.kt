@@ -1,11 +1,7 @@
 package io.github.guellenmade.rootlessvm.vm
 
 import android.content.Context
-import io.github.guellenmade.rootlessvm.di.ServiceLocator
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
-import java.net.URI
 import java.security.MessageDigest
 
 /**
@@ -51,9 +47,9 @@ class ProotProvisioner(private val paths: ContainerPaths) {
 
     private fun downloadVerified(url: String, target: File, shaUrl: String): Result<File> =
         runCatching {
-            val expected = fetchText(shaUrl).trim().split(" ")[0]
+            val expected = io.github.guellenmade.rootlessvm.net.HttpFetch.fetchText(shaUrl).trim().split(" ")[0]
             val tmp = File(target.parentFile, "proot.download")
-            fetchStream(url).use { input ->
+            io.github.guellenmade.rootlessvm.net.HttpFetch.open(url).use { input ->
                 tmp.outputStream().use { input.copyTo(it) }
             }
             val digest = MessageDigest.getInstance("SHA-256")
@@ -75,30 +71,6 @@ class ProotProvisioner(private val paths: ContainerPaths) {
             target.setExecutable(true, false)
             target
         }
-
-    private fun fetchText(url: String): String {
-        val conn = URI(url).toURL().openConnection() as java.net.HttpURLConnection
-        conn.connectTimeout = 20000
-        conn.readTimeout = 60000
-        conn.instanceFollowRedirects = true
-        val code = conn.responseCode
-        if (code != 200) {
-            throw IllegalStateException("HTTP $code for ${conn.url.file}")
-        }
-        return conn.inputStream.bufferedReader().use { it.readText() }
-    }
-
-    private fun fetchStream(url: String): java.io.InputStream {
-        val conn = URI(url).toURL().openConnection() as java.net.HttpURLConnection
-        conn.connectTimeout = 20000
-        conn.readTimeout = 60000
-        conn.instanceFollowRedirects = true
-        val code = conn.responseCode
-        if (code != 200) {
-            throw IllegalStateException("HTTP $code for ${conn.url.file}")
-        }
-        return conn.inputStream
-    }
 
     companion object {
         const val RELEASE_URL =

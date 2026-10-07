@@ -2,10 +2,10 @@ package io.github.guellenmade.rootlessvm.ui
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.lifecycleScope
 import io.github.guellenmade.rootlessvm.di.ServiceLocator
 import io.github.guellenmade.rootlessvm.vm.ContainerSession
 import io.github.guellenmade.rootlessvm.vm.VmService
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -22,13 +22,14 @@ class ShortcutLaunchActivity : ComponentActivity() {
             VmService.start(this)
         }
         val session = ContainerSession(locator.paths, locator.rootfsManifest)
-        CoroutineScope(Dispatchers.IO).launch {
+        // lifecycleScope is cancelled when the activity is destroyed, preventing leaks.
+        lifecycleScope.launch(Dispatchers.IO) {
             repeat(30) {
                 if (locator.vmController.state.value is io.github.guellenmade.rootlessvm.vm.VmState.Running) {
                     session.launchApp(packageName, null)
                     return@launch
                 }
-                Thread.sleep(1000)
+                kotlinx.coroutines.delay(1000)
             }
         }
         val main = android.content.Intent(this, MainActivity::class.java)

@@ -59,6 +59,6 @@ class ContainerSession(
         }
     }
 
-    suspend fun injectInput(event: String): Result<Unit> =
-        exec(listOf("/system/bin/input", event)).map { Unit }
+    suspend fun injectInput(vararg event: String): Result<Unit> =
+        exec(listOf("/system/bin/input", *event)).map { Unit }
 }
