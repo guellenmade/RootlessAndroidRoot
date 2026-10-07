@@ -739,3 +739,28 @@ Fixes:
   proot-boot.log and runs a `proot --version` preflight probe, logging its
   rc and output, so a broken binary is immediately distinguishable from
   argument errors. Dialog log tail raised from 15 to 40 lines.
+
+### 36. Bundled proot never extracted: useLegacyPackaging (2026-10-07)
+
+The v0.1.3 release APK contains libproot.so for all ABIs, yet on-device
+"Download everything" still failed with RuntimeArtifactUnavailable for proot
+(arm64-v8a), claiming artifacts were not published (they were, and the
+release download URLs answer 200 anonymously).
+
+Root cause: AGP 8 defaults to useLegacyPackaging=false, which silently
+overrides android:extractNativeLibs="true" in the manifest at build time.
+libproot.so was stored inside the APK (Deflated) and never extracted to the
+APK's nativeLibraryDir, so ContainerPaths.bundledProot was null, the
+ProotProvisioner bundled-lib short-circuit (section 34) never fired, and the
+provisioner fell through to the download path — which failed on the device
+for network reasons.
+
+Fixes:
+- app/build.gradle.kts: release buildType sets isUseLegacyPackaging = true
+  so .so files are stored uncompressed and extracted to nativeLibraryDir at
+  install time (required for ADR-013 exec-from-nativeLibraryDir).
+- FailState.RuntimeArtifactUnavailable reason now carries the real error
+  detail (runtime-artifact-unavailable:<component>:<detail>) instead of
+  dropping it, and MainViewModel.failFromReason parses it back out. The
+  dialog previously hardcoded "download failed", which hid the actual HTTP
+  error and made a bundling bug look like a missing-artifacts problem.

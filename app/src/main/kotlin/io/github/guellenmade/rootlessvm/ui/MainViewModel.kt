@@ -240,8 +240,12 @@ class MainViewModel(private val locator: ServiceLocator) : ViewModel() {
 
     private fun failFromReason(reason: String): FailState = when {
         reason.startsWith("unsupported-abi") -> FailState.UnsupportedAbi(reason.substringAfter(':'))
-        reason.startsWith("runtime-artifact-unavailable") ->
-            FailState.RuntimeArtifactUnavailable("download failed", reason.substringAfter(':'))
+        reason.startsWith("runtime-artifact-unavailable") -> {
+            val payload = reason.removePrefix("runtime-artifact-unavailable:")
+            val parts = payload.split(':', limit = 2)
+            if (parts.size == 2) FailState.RuntimeArtifactUnavailable(parts[1], parts[0])
+            else FailState.RuntimeArtifactUnavailable("download failed", parts[0])
+        }
         reason.startsWith("insufficient-storage") -> FailState.InsufficientStorage(0, 0)
         reason.startsWith("checksum-mismatch") -> {
             val payload = reason.removePrefix("checksum-mismatch:")

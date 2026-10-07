@@ -31,7 +31,7 @@ sealed class FailState(val reason: String, val userMessage: String) {
     )
 
     class RuntimeArtifactUnavailable(val detail: String, component: String) : FailState(
-        reason = "runtime-artifact-unavailable:$component",
+        reason = "runtime-artifact-unavailable:$component:$detail",
         userMessage = "The $component runtime component could not be downloaded (details: $detail). " +
             "The required artifacts have not been published yet for this build — see the project releases. " +
             "Nothing was half-installed; you can retry once artifacts are available.",
